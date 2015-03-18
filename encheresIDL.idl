@@ -1,0 +1,72 @@
+module Enchere {    
+	
+	exception ProduitExistePas {string raison;}; 
+	const float pas = 1.1;
+	
+	struct Utilisateur{
+	 string id;
+	 string nom;
+	 string mdp;
+	 string adresse; 
+	};
+
+    typedef sequence<Utilisateur> ListeUtilisateurs;
+    
+   struct Produit {
+    string id;
+	string nom;
+	string categorie;
+    string description;
+	float prix_depart;/*Cet attribut plus le pas sera le prix en cours */
+	string date_fin;
+	Utilisateur vendeur;
+    };
+	
+	struct Vente{
+	string idVente;
+	Produit produitVendu;
+	Utilisateur acheteur;
+	string debutVente;
+	string finVente;
+	};
+	
+	typedef sequence<Produit> ListeProduits;
+	
+	 interface Acheteur_Vendeur{
+		attribute ListeProduits listeproduits;
+		oneway void recevoirNotification (in string message);
+    };
+	
+    interface SystemeEnchere{
+    	attribute ListeProduits tousLesProduits;
+    	attribute ListeUtilisateurs tousLesUtilisateurs;
+		
+		ListeProduits consulterListeProduits();
+		ListeProduits rechercherProduit(in string critere) raises (ProduitExistePas);
+
+		/* attribut HashMap qui permet de stocker pour chaque produit la correspondance entre les acheteurs et les prix proposés*/
+		
+    	void demanderNotificationEnchereEnCours (in Utilisateur user, in Produit produit, in Acheteur_Vendeur ior);
+    	void creerCompte(in string username, in string userpswd, in string userAdresse);
+    	Utilisateur seConnecter(in string username, in string userpswd);
+    	
+    	Utilisateur getAcheteurProduit(in Produit produit);
+    	
+		void publierProduit(in Utilisateur vendeur, in string nomProduit, in string categorieProduit, in string descProduit, in float prixProduit,in string dateProduit );
+		/* instanciation d'un objet GestionEnchere à la publication d'un nouveau produit*/
+    	
+		
+		string proposerPrix(in float prix, in Utilisateur user, in Produit produit);
+    };
+
+    interface Archivage{
+    	void archiverVenteAchevee(in Vente venteAcheve);
+    	void mettreAuxEnchere();
+    	boolean archiverProduits(in ListeProduits listeproduits);
+    	boolean archiverUtilisateurs(in ListeUtilisateurs listeUtilisateurs);
+    	ListeProduits chargerProduits();
+    	ListeUtilisateurs chargerUtilisateurs();
+    	void statistiques();
+    };
+
+};
