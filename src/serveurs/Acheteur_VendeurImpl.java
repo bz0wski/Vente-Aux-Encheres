@@ -3,6 +3,7 @@
  */
 package serveurs;
 
+import utility.EnchereObserver;
 import Enchere.Acheteur_VendeurPOA;
 import Enchere.Produit;
 
@@ -10,7 +11,8 @@ import Enchere.Produit;
  * @author Salim AHMED
  *
  */
-public class Acheteur_VendeurImpl extends Acheteur_VendeurPOA {
+public class Acheteur_VendeurImpl extends Acheteur_VendeurPOA{
+
 
 	@Override
 	public Produit[] listeproduits() {
@@ -21,14 +23,12 @@ public class Acheteur_VendeurImpl extends Acheteur_VendeurPOA {
 	@Override
 	public void listeproduits(Produit[] newListeproduits) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void recevoirNotification(String message) {
-		// TODO Auto-generated method stub
-		
+		System.out.println("NOTIFICATION:  "+ message);
 	}
-
 
 }

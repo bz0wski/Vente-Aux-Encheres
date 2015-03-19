@@ -69,14 +69,18 @@ public class Acheteur_Vendeur_Client {
 				System.out.println(users[i].nom);
 			}
 			Utilisateur userUtilisateur = new Utilisateur("yttft","jkhhhjk","ljjn","jhjkhj");
-			systemeEnchere.publierProduit(userUtilisateur, "coffee", "alimentation", "fort et noir", 5.6f, "mercredi 18 mars 2015 01:21");
-			systemeEnchere.publierProduit(userUtilisateur, "coffee", "alimentation", "fort et noir", 5.6f, "mercredi 18 mars 2015 01:21");
+			//systemeEnchere.publierProduit(userUtilisateur, "coffee", "alimentation", "fort et noir", 5.6f, "mercredi 18 mars 2015 01:21");
+			//systemeEnchere.publierProduit(userUtilisateur, "coffee", "alimentation", "fort et noir", 5.6f, "mercredi 18 mars 2015 01:21");
 
 			Produit [] produits = systemeEnchere.tousLesProduits();
 			for (int i = 0; i < produits.length; i++) {
 				System.out.println(produits[i].nom);
 			}
-			systemeEnchere.proposerPrix(7.3f, userUtilisateur, produits[0]);
+			//systemeEnchere.demanderNotificationEnchereEnCours(users[0], produits[0], ior);
+			
+			systemeEnchere.proposerPrix(7.3f, users[0], produits[0]);
+			systemeEnchere.proposerPrix(7.3f, users[0], produits[0]);
+			
 			Utilisateur user = systemeEnchere.seConnecter("salim", "ahmed");
 			if(user != null)
 			System.out.println("Bonjour "+user.nom);

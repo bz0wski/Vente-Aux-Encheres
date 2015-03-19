@@ -24,10 +24,10 @@ public class ArchivageImpl extends ArchivagePOA {
 
 	private static String OS = null;
 	List<Vente> ventesAcheve = new ArrayList<Vente>();
-	
+
 	//List<Utilisateur> userList = new ArrayList<>();
 	//List<Produit> produitList = new ArrayList<>();
-	
+
 	@Override
 	public void mettreAuxEnchere() {
 		// TODO Auto-generated method stub
@@ -44,7 +44,6 @@ public class ArchivageImpl extends ArchivagePOA {
 	@Override
 	public void archiverVenteAchevee(Vente venteAcheve) {
 		ventesAcheve.add(venteAcheve);
-
 	}
 
 	public boolean archiverProduits(Produit[] listeproduits){
@@ -66,7 +65,7 @@ public class ArchivageImpl extends ArchivagePOA {
 		}
 		return true;
 	}
-	
+
 	public boolean archiverUtilisateurs( Utilisateur[] listeUtilisateurs){
 		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
 		if (!db.exists()) {
@@ -86,8 +85,8 @@ public class ArchivageImpl extends ArchivagePOA {
 		}
 		return true;
 	}
-	
-	
+
+
 	@SuppressWarnings("unchecked")
 	public Produit[] chargerProduits(){ 
 		List<Produit> produitList = new ArrayList<>();
@@ -109,10 +108,10 @@ public class ArchivageImpl extends ArchivagePOA {
 				return produitList.toArray(new Produit[0]);
 			}
 		}
-			return produitList.toArray(new Produit[0]);
+		return produitList.toArray(new Produit[0]);
 	}
-	
-	
+
+
 	@SuppressWarnings("unchecked")
 	public Utilisateur[] chargerUtilisateurs(){
 		List<Utilisateur> userList = new ArrayList<>();
@@ -134,18 +133,17 @@ public class ArchivageImpl extends ArchivagePOA {
 				return userList.toArray(new Utilisateur[0]);
 			}
 		}
-			return userList.toArray(new Utilisateur[0]);
+		return userList.toArray(new Utilisateur[0]);
 	}
-	
-	
+
 	//Load serailized data to run application
 	@SuppressWarnings("unchecked")
-	private boolean internalInit() {
+	private boolean recupererVentesNonTerminees() {
 		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
 		if (!db.exists()) {
 			System.err.println("BD introuvable");
 		}
-		File file = new File(db.getAbsolutePath(),"Ventes.ser" );
+		File file = new File(db.getAbsolutePath(),"VentesEnCours.ser" );
 
 		if (file.exists() && file.canRead()) {
 			try(FileInputStream fileInputStream = new FileInputStream(file);
@@ -159,12 +157,12 @@ public class ArchivageImpl extends ArchivagePOA {
 				return false;
 			}
 		}
-			return true;
-		
+		return true;
+
 	}
 
 	//Write data to disk
-	private boolean internalPersist() {
+	private boolean archivageVentesNonTerminees() {
 		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
 		if (!db.exists()) {
 			try {
@@ -173,7 +171,52 @@ public class ArchivageImpl extends ArchivagePOA {
 				e.printStackTrace();
 			}
 		}
-		File file = new File(db.getAbsolutePath(),"Ventes.ser" );
+		File file = new File(db.getAbsolutePath(),"VentesEnCours.ser" );
+		try(FileOutputStream fileout = new FileOutputStream(file);
+				ObjectOutputStream outputStream = new ObjectOutputStream(fileout)){
+			outputStream.writeObject(ventesAcheve);
+		}catch (Exception e) {
+			e.getMessage();
+			return false;
+		}
+		return true;
+	}
+	//Load serailized data to run application
+	@SuppressWarnings("unchecked")
+	private boolean recupererVentesTerminees() {
+		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
+		if (!db.exists()) {
+			System.err.println("BD introuvable");
+		}
+		File file = new File(db.getAbsolutePath(),"VentesTerminees.ser" );
+
+		if (file.exists() && file.canRead()) {
+			try(FileInputStream fileInputStream = new FileInputStream(file);
+					ObjectInputStream inputStream = new ObjectInputStream(fileInputStream)) {
+				ventesAcheve = (List<Vente>)inputStream.readObject();
+				if (ventesAcheve.isEmpty()) {
+					throw new IllegalArgumentException("Corrupted Database File, couldn't recover any useful data");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
+		}
+		return true;
+
+	}
+
+	//Write data to disk
+	private boolean archivageVentesTerminees() {
+		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
+		if (!db.exists()) {
+			try {
+				db.mkdirs();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		File file = new File(db.getAbsolutePath(),"VentesTerminees.ser" );
 		try(FileOutputStream fileout = new FileOutputStream(file);
 				ObjectOutputStream outputStream = new ObjectOutputStream(fileout)){
 			outputStream.writeObject(ventesAcheve);
