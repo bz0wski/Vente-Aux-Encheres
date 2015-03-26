@@ -3,7 +3,14 @@ package serveurs;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import org.eclipse.core.databinding.observable.Realm;
+import org.eclipse.jface.databinding.swt.SWTObservables;
+import org.eclipse.swt.widgets.Display;
 import org.omg.CORBA.ORBPackage.InvalidName;
 import org.omg.CosNaming.NameComponent;
 import org.omg.CosNaming.NamingContext;
@@ -17,23 +24,63 @@ import org.omg.PortableServer.POAPackage.ServantAlreadyActive;
 import org.omg.PortableServer.POAPackage.ServantNotActive;
 import org.omg.PortableServer.POAPackage.WrongPolicy;
 
-import clients.ClientWindow;
+import ui.SystemeEnchereWindow;
+import Enchere.Acheteur_Vendeur;
+import Enchere.Acheteur_VendeurHelper;
 import Enchere.Archivage;
+import Enchere.Produit;
+import Enchere.SystemeEnchere;
+import Enchere.SystemeEnchereHelper;
+import Enchere.Utilisateur;
+import Enchere.Vente;
 
 public class SystemeEnchere_Serveur {
 
 	public static Archivage archivage;
-	
+	private static boolean advance = false;
+	private static String IORServant = null;
+	CountDownLatch latch = new CountDownLatch(1);
+
+	private static final Object lock = new Object();
+	private static ExecutorService executor = Executors.newSingleThreadExecutor();
 	public static void main(String[] args) {
+		/********************************************************************************************************************/
+		/******************************** LANCEMENT DE LA PARTIE SERVEUR ********************************************************/			
+		/********************************************************************************************************************/	
+
+
+
 		/********************************************************************************************************************/			
 		/******************************** LANCER LA PARTIE CLIENT D'ABORD, CE CLIENT VA CONSULTER ******************************/			
 		/******************************** LE SERVEUR D'ARCHIVAGE POUR INITIALISER LES DONNEES. ********************************/			
 		/********************************************************************************************************************/			
+
 		enchereClientToArchive(args);
-		/********************************************************************************************************************/
-		/******************************** LANCEMENT DE LA PARTIE SERVEUR ********************************************************/			
-		/********************************************************************************************************************/			
-		
+
+		/*	synchronized (lock) {
+			while(!advance){
+				try {
+					lock.wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}*/
+
+	}
+
+
+
+	public static void advance(boolean what) {
+		synchronized (lock) {
+			advance = what;
+			lock.notifyAll();
+
+		}
+	}
+
+	private static void enchereServer(String [] args) {
 		// Intialisation de l'ORB
 		// ************************
 		org.omg.CORBA.ORB orb = org.omg.CORBA.ORB.init(args, null);
@@ -49,14 +96,14 @@ public class SystemeEnchere_Serveur {
 
 			// Activer le servant au sein du POA
 			rootPOA.activate_object(systemeEnchere);
-		
+
 			// Activer le POA manager
 			rootPOA.the_POAManager().activate();
-			
+
 			// Affichage des référecences d'objets CORBA
-			String IORServant = null;
+
 			IORServant = orb.object_to_string(rootPOA.servant_to_reference(systemeEnchere));
-		
+
 			// Enregistrement dans le service de nommage
 			// *******************************************
 			// Recuperation du naming service
@@ -65,10 +112,10 @@ public class SystemeEnchere_Serveur {
 			// Creation d'un contexte "Systeme d'Enchere"
 			NameComponent[] contexteSystemeEnchere = new NameComponent[1];
 			contexteSystemeEnchere[0] = new NameComponent("SystemeEnchere", "Contexte");
-			
+
 			NameComponent[] objetSystemeEnchere = new NameComponent[2];
 			objetSystemeEnchere[0] = contexteSystemeEnchere[0];
-			
+
 			System.out.println("Sous quel nom voulez-vous enregistrer l'objet Corba systeme Enchere ?");
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			String nomObj01 = in.readLine();
@@ -87,18 +134,43 @@ public class SystemeEnchere_Serveur {
 			System.out.println(IORServant);
 
 			// Lancement de l'ORB (et mise en attente de requetes)
-			// ***************************************************
-			orb.run();
+			// RUN ORB on another thread
+
+			Runnable runnable = new Runnable() {
+
+				@Override
+				public void run() {
+					orb.run();		
+				}
+			};
+
+			try {
+				executor.execute(runnable);
+				//**Important to shut the executor once it's done *//*
+
+			} catch (Exception e) {
+
+				e.getMessage();
+				//**Important to shut the executor once it's done *//*
+				executor.shutdown();
+
+			}finally{
+				executor.shutdownNow();
+			}
+
 		} catch (InvalidName | ServantAlreadyActive | WrongPolicy | AdapterInactive | IOException | NotFound | CannotProceed | org.omg.CosNaming.NamingContextPackage.InvalidName | ServantNotActive e) {
 			e.getMessage();		
 			e.printStackTrace();
 		}
+	}
 
 
+	public static void shutdown() {
+		 executor.shutdown();
 	}
 	
 	private static void enchereClientToArchive(String [] args) {
-		
+
 		try {
 			// Intialisation de l'ORB
 			org.omg.CORBA.ORB orb = org.omg.CORBA.ORB.init(args, null);	
@@ -106,7 +178,7 @@ public class SystemeEnchere_Serveur {
 			// Utilisation service de nommage
 			//********************************
 			// Saisie du nom de l'objet (si utilisation du service de nommage)
-			System.out.println("Quel objet Corba voulez-vous contacter ?");
+			System.out.println("Quel objet Serveur Archivage voulez-vous contacter ?");
 			BufferedReader in = new BufferedReader(new InputStreamReader(
 					System.in));
 			String idObj = in.readLine();
@@ -127,19 +199,73 @@ public class SystemeEnchere_Serveur {
 			System.out.println("Objet '" + idObj
 					+ "' trouvé auprès du service de noms. IOR de l'objet :");
 			System.out.println(orb.object_to_string(distantArchivage));
+			System.out.println("\nLancement du serveur Systeme Enchere");
+			enchereServer(args);
 
-			// Casting de l'objet CORBA vers le type Convertisseur.Euro
-			archivage = Enchere.ArchivageHelper.narrow(distantArchivage);
+			if (IORServant != null) {
+				//System.out.println("IORSERVANT not null:\n"+IORServant);
+				org.omg.CORBA.Object systemeEnchereObj = orb.string_to_object(IORServant);
+				SystemeEnchere systemeEnchere = SystemeEnchereHelper.narrow(systemeEnchereObj);
 
-			//Recuperer les données stockées dans la bd
+				//Passer une reference de systemeEnchereImpl pour les appels aux structs de données à stocker
+
+
+				archivage = Enchere.ArchivageHelper.narrow(distantArchivage);
+				archivage.mettreAuxEnchere();
+
+
+				//Recuperer les données stockées dans la bd, initialiser le systeme
+				//quand tout s'est bien passé, lancer le serveur
+				//Lancement du serveur
+
+
+				Produit[] produits = archivage.chargerProduits();
+				Utilisateur[] utilisateurs = archivage.chargerUtilisateurs();
+				Vente[] ventes = archivage.chargerVentesEncours();
+
+				systemeEnchere.tousLesProduits(produits);
+				systemeEnchere.tousLesUtilisateurs(utilisateurs);
+				systemeEnchere.tousLesVentesEncours(ventes);
+
+				System.out.println("Les Produits");
+				for (int i = 0; i < produits.length; i++) {
+					System.out.println(produits[i].nom);
+				}
+
+				System.out.println("Les Utilisateurs");
+				for (int i = 0; i < utilisateurs.length; i++) {
+					System.out.println(utilisateurs[i].nom);
+				}
+
+				System.out.println("Les Ventes en cours");
+				for (int i = 0; i < ventes.length; i++) {
+					System.out.println(ventes[i].idVente);
+				}
+
+				final Display display = Display.getDefault();
+				Realm.runWithDefault(SWTObservables.getRealm(display), new Runnable() {
+					@Override
+					public void run() {
+						try {
+							// Appel de l'interface graphique
+							SystemeEnchereWindow systemeEnchereWindow = new SystemeEnchereWindow(archivage,systemeEnchere);
+							systemeEnchereWindow.open();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+
+					}
+				});
+
+			}
+
 			
-			// Appel de l'interface graphique
-			ClientWindow clientWindow = new ClientWindow();
-			clientWindow.open();
-			System.out.println("Systeme Enchere execute en tant que client..");
 		} catch (Exception e) {
 			e.getMessage();
 			e.printStackTrace();
+		}finally{
+			executor.shutdown();
 		}
 
 	}

@@ -55,7 +55,7 @@ public class SystemeEnchereClient_Notifications {
 			client = Enchere.Acheteur_VendeurHelper.narrow(distantUtilisateur);
 
 			// Appel de l'interface graphique
-			//ClientWindow clientWindow = new ClientWindow();
+			//SystemeEnchereWindow clientWindow = new SystemeEnchereWindow();
 			//clientWindow.open();
 			System.out.println("Systeme Enchere execute en tant que client..");
 /**************************************************TESTING QUERIES***************************************************************************/

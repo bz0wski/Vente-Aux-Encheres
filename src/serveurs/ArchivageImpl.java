@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import Enchere.ArchivagePOA;
@@ -25,13 +26,9 @@ public class ArchivageImpl extends ArchivagePOA {
 	private static String OS = null;
 	List<Vente> ventesAcheve = new ArrayList<Vente>();
 
-	//List<Utilisateur> userList = new ArrayList<>();
-	//List<Produit> produitList = new ArrayList<>();
-
 	@Override
 	public void mettreAuxEnchere() {
-		// TODO Auto-generated method stub
-
+		System.out.println("Mettre au encheres");
 	}
 
 
@@ -47,6 +44,13 @@ public class ArchivageImpl extends ArchivagePOA {
 	}
 
 	public boolean archiverProduits(Produit[] listeproduits){
+		if (listeproduits.length == 0) {
+			return false;
+		}
+		System.out.println("Writing produits");
+		for (int i = 0; i < listeproduits.length; i++) {
+			System.out.println(listeproduits[i].nom);
+		}
 		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
 		if (!db.exists()) {
 			try {
@@ -56,9 +60,10 @@ public class ArchivageImpl extends ArchivagePOA {
 			}
 		}
 		File file = new File(db.getAbsolutePath(),"Produits.ser" );
+		List<Produit> list = new ArrayList<Produit>(Arrays.asList(listeproduits));
 		try(FileOutputStream fileout = new FileOutputStream(file);
 				ObjectOutputStream outputStream = new ObjectOutputStream(fileout)){
-			outputStream.writeObject(ventesAcheve);
+			outputStream.writeObject(list);
 		}catch (Exception e) {
 			e.getMessage();
 			return false;
@@ -67,6 +72,13 @@ public class ArchivageImpl extends ArchivagePOA {
 	}
 
 	public boolean archiverUtilisateurs( Utilisateur[] listeUtilisateurs){
+		if (listeUtilisateurs.length == 0) {
+			return false;
+		}
+		System.out.println("Writing utilisateurs");
+		for (int i = 0; i < listeUtilisateurs.length; i++) {
+			System.out.println(listeUtilisateurs[i].nom);
+		}
 		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
 		if (!db.exists()) {
 			try {
@@ -76,9 +88,10 @@ public class ArchivageImpl extends ArchivagePOA {
 			}
 		}
 		File file = new File(db.getAbsolutePath(),"Utilisateurs.ser" );
+		List<Utilisateur> list = new ArrayList<Utilisateur>(Arrays.asList(listeUtilisateurs));
 		try(FileOutputStream fileout = new FileOutputStream(file);
 				ObjectOutputStream outputStream = new ObjectOutputStream(fileout)){
-			outputStream.writeObject(ventesAcheve);
+			outputStream.writeObject(list);
 		}catch (Exception e) {
 			e.getMessage();
 			return false;
@@ -100,8 +113,8 @@ public class ArchivageImpl extends ArchivagePOA {
 			try(FileInputStream fileInputStream = new FileInputStream(file);
 					ObjectInputStream inputStream = new ObjectInputStream(fileInputStream)) {
 				produitList = (List<Produit>)inputStream.readObject();
-				if (ventesAcheve.isEmpty()) {
-					throw new IllegalArgumentException("Corrupted Database File, couldn't recover any useful data");
+				if (produitList.isEmpty()) {
+					//throw new IllegalArgumentException("Corrupted Database File, couldn't recover any useful data");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -122,11 +135,12 @@ public class ArchivageImpl extends ArchivagePOA {
 		File file = new File(db.getAbsolutePath(),"Utilisateurs.ser" );
 
 		if (file.exists() && file.canRead()) {
+			
 			try(FileInputStream fileInputStream = new FileInputStream(file);
 					ObjectInputStream inputStream = new ObjectInputStream(fileInputStream)) {
 				userList = (List<Utilisateur>)inputStream.readObject();
-				if (ventesAcheve.isEmpty()) {
-					throw new IllegalArgumentException("Corrupted Database File, couldn't recover any useful data");
+				if (userList.isEmpty()) {
+					//throw new IllegalArgumentException("Corrupted Database File, couldn't recover any useful data");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -137,75 +151,13 @@ public class ArchivageImpl extends ArchivagePOA {
 	}
 
 	//Load serailized data to run application
-	@SuppressWarnings("unchecked")
-	private boolean recupererVentesNonTerminees() {
-		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
-		if (!db.exists()) {
-			System.err.println("BD introuvable");
-		}
-		File file = new File(db.getAbsolutePath(),"VentesEnCours.ser" );
 
-		if (file.exists() && file.canRead()) {
-			try(FileInputStream fileInputStream = new FileInputStream(file);
-					ObjectInputStream inputStream = new ObjectInputStream(fileInputStream)) {
-				ventesAcheve = (List<Vente>)inputStream.readObject();
-				if (ventesAcheve.isEmpty()) {
-					throw new IllegalArgumentException("Corrupted Database File, couldn't recover any useful data");
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				return false;
-			}
-		}
-		return true;
-
-	}
 
 	//Write data to disk
-	private boolean archivageVentesNonTerminees() {
-		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
-		if (!db.exists()) {
-			try {
-				db.mkdirs();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		File file = new File(db.getAbsolutePath(),"VentesEnCours.ser" );
-		try(FileOutputStream fileout = new FileOutputStream(file);
-				ObjectOutputStream outputStream = new ObjectOutputStream(fileout)){
-			outputStream.writeObject(ventesAcheve);
-		}catch (Exception e) {
-			e.getMessage();
-			return false;
-		}
-		return true;
-	}
+	
 	//Load serailized data to run application
-	@SuppressWarnings("unchecked")
-	private boolean recupererVentesTerminees() {
-		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
-		if (!db.exists()) {
-			System.err.println("BD introuvable");
-		}
-		File file = new File(db.getAbsolutePath(),"VentesTerminees.ser" );
 
-		if (file.exists() && file.canRead()) {
-			try(FileInputStream fileInputStream = new FileInputStream(file);
-					ObjectInputStream inputStream = new ObjectInputStream(fileInputStream)) {
-				ventesAcheve = (List<Vente>)inputStream.readObject();
-				if (ventesAcheve.isEmpty()) {
-					throw new IllegalArgumentException("Corrupted Database File, couldn't recover any useful data");
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				return false;
-			}
-		}
-		return true;
-
-	}
-
+/*
 	//Write data to disk
 	private boolean archivageVentesTerminees() {
 		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
@@ -225,8 +177,117 @@ public class ArchivageImpl extends ArchivagePOA {
 			return false;
 		}
 		return true;
+	}*/
+
+	
+	
+
+
+	@Override
+	public boolean archiverVenteEncours(Vente[] listeVentes) {
+		if (listeVentes.length == 0) {
+			return false;
+		}
+		System.out.println("Writing Ventes");
+		for (int i = 0; i < listeVentes.length; i++) {
+			System.out.println(listeVentes[i].idVente);
+		}
+		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
+		if (!db.exists()) {
+			try {
+				db.mkdirs();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		List<Vente> list = new ArrayList<Vente>(Arrays.asList(listeVentes));
+		File file = new File(db.getAbsolutePath(),"VentesEnCours.ser" );
+		try(FileOutputStream fileout = new FileOutputStream(file);
+				ObjectOutputStream outputStream = new ObjectOutputStream(fileout)){
+			outputStream.writeObject(list);
+		}catch (Exception e) {
+			e.getMessage();
+			return false;
+		}
+		return true;
 	}
 
+
+	@Override
+	public Vente[] chargerVentesEncours() {
+		List<Vente> ventes = new ArrayList<>();
+		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
+		if (!db.exists()) {
+			System.err.println("BD introuvable");
+		}
+		File file = new File(db.getAbsolutePath(),"VentesEnCours.ser" );
+
+		if (file.exists() && file.canRead()) {
+			try(FileInputStream fileInputStream = new FileInputStream(file);
+					ObjectInputStream inputStream = new ObjectInputStream(fileInputStream)) {
+				ventes = (List<Vente>)inputStream.readObject();
+				if (ventes.isEmpty()) {
+					//throw new IllegalArgumentException("Corrupted Database File, couldn't recover any useful data");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				
+			}
+		}
+		return ventes.toArray(new Vente[0]);
+	}
+
+
+	@Override
+	public boolean archiverVenteTerminees(Vente[] listeVentes) {
+		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
+		if (!db.exists()) {
+			try {
+				db.mkdirs();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		File file = new File(db.getAbsolutePath(),"VentesTerminees.ser" );
+		List<Vente> list = new ArrayList<Vente>(Arrays.asList(listeVentes));
+
+		try(FileOutputStream fileout = new FileOutputStream(file);
+				ObjectOutputStream outputStream = new ObjectOutputStream(fileout)){
+			outputStream.writeObject(list);
+		}catch (Exception e) {
+			e.getMessage();
+			return false;
+		}
+		return true;
+	}
+
+
+
+	@Override
+	public Vente[] chargerVenteTerminees() {
+		
+		File db = new File(getAppDataDirectory(),"org.ups.ProjetCORBA"+File.separator+"db");
+		if (!db.exists()) {
+			System.err.println("BD introuvable");
+		}
+		File file = new File(db.getAbsolutePath(),"VentesTerminees.ser" );
+
+		if (file.exists() && file.canRead()) {
+			try(FileInputStream fileInputStream = new FileInputStream(file);
+					ObjectInputStream inputStream = new ObjectInputStream(fileInputStream)) {
+				ventesAcheve = (List<Vente>)inputStream.readObject();
+				if (ventesAcheve.isEmpty()) {
+					throw new IllegalArgumentException("Corrupted Database File, couldn't recover any useful data");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				
+			}
+		}
+		return ventesAcheve.toArray(new Vente[0]);
+	}
+
+	
 	public static String getOSName()
 	{
 		if(OS == null) { OS = System.getProperty("os.name"); }    
@@ -239,8 +300,7 @@ public class ArchivageImpl extends ArchivagePOA {
 		}else if (getOSName().startsWith("Mac")) {
 			return System.getProperty("user.home")+"/Library/Application Support";
 		}
-		return null;
+		return "";
 
 	}
-
 }

@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,7 +33,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	private Map<String, List<Acheteur_Vendeur>> prod_UserNotifications = new HashMap<>();
 	private Map<String, Map<String, List<Double>>> histo_prod_User_Prix = new HashMap<>();
 
-	Map<Utilisateur, String> user_IOR_ASSOC = new HashMap<>();
+	//Map<Utilisateur, String> user_IOR_ASSOC = new HashMap<>();
 	/**
 	 * Get the list of all the produits.
 	 * @see Enchere.SystemeEnchereOperations#tousLesProduits()
@@ -52,18 +53,18 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 
 	public void tousLesProduits(Produit[] newTousLesProduits) {
 
-		this.lesProduits = Arrays.asList(newTousLesProduits);
+		this.lesProduits = new ArrayList<>(Arrays.asList(newTousLesProduits));
 
 	}
 
 	@Override
 	public Utilisateur[] tousLesUtilisateurs() {
-		return  lesUtilisateurs.toArray(new Utilisateur[0]);
+		return lesUtilisateurs.toArray(new Utilisateur[0]);
 	}
 
 	@Override
 	public void tousLesUtilisateurs(Utilisateur[] newTousLesUtilisateurs) {
-		this.lesUtilisateurs = Arrays.asList(newTousLesUtilisateurs);
+		this.lesUtilisateurs = new ArrayList<>(Arrays.asList(newTousLesUtilisateurs));
 
 	}
 
@@ -72,6 +73,16 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		return tousLesProduits();
 	}
 
+	@Override
+	public Vente[] tousLesVentesEncours() {
+		System.out.println("LES VENTES EN COURS:");
+		return lesVentesEnCours.toArray(new Vente[0]);
+	}
+	@Override
+	public void tousLesVentesEncours(Vente[] newTousLesVentesEncours) {
+		lesVentesEnCours = new ArrayList<Vente>(Arrays.asList(newTousLesVentesEncours));	
+	}
+	
 	@Override
 	public Produit[] rechercherProduit(String critere) throws ProduitExistePas {
 		//L'utilisateur presente son critere de recherche, qui peut etre le nom ou la catégorie
@@ -186,7 +197,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	 */
 
 	@Override
-	public void creerCompte(String username, String userpswd, String userAdresse) {
+	public boolean creerCompte(String username, String userpswd, String userAdresse) {
 
 		Utilisateur newUtilisateur = new Utilisateur();
 		//Creation d'un identifiant unique pour les utilisateurs
@@ -195,11 +206,23 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		newUtilisateur.mdp = userpswd;
 		newUtilisateur.adresse = userAdresse;
 
-		lesUtilisateurs.add(newUtilisateur);
-
+		addUser(newUtilisateur);
+		
+		return true;
 		//System.out.println("Utilisateur ajouté: \nNom: "+newUtilisateur.nom+"");
 	}
 
+	private void addUser(Utilisateur user) {
+		synchronized (lesUtilisateurs) {
+			lesUtilisateurs.add(user);
+		}
+	}
+	
+	private void addProduit(Produit produit) {
+		synchronized (lesProduits) {
+			lesProduits.add(produit);
+		}
+	}
 	/**
 	 * Chercher un match pour le nom d'utilisateur et le mdp, retourne le 1e match trouvé 
 	 * (non-Javadoc)
@@ -207,60 +230,73 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	 */
 	@Override
 	public Utilisateur seConnecter(String username, String userpswd) {
-		Utilisateur newUser = null;
-		newUser = lesUtilisateurs.stream().filter(u->u.nom.equals(username) && u.mdp.equals(userpswd)).findFirst().get();
+			if (lesUtilisateurs.isEmpty()) {
+			return new Utilisateur("", "", "", "");
+		}
+		
+		Optional<Utilisateur> newUser = Optional.ofNullable(null);
+		newUser = lesUtilisateurs.stream().filter(u-> u.nom.equals(username) && u.mdp.equals(userpswd)).findFirst();
+	
 		//Si utilisateur n'est pas dans la BD retourne null.
-		if(newUser == null)
-			return null;
-		return newUser;
-
+		if(!newUser.isPresent())
+			return new Utilisateur("", "", "", "");
+		return newUser.get();
+		
+		/*	for (Utilisateur u : lesUtilisateurs) {
+		if (u.nom.equals(username) && u.mdp.equals(userpswd)) {
+			return u;
+		}
+	}*/
+		
 	}
 	/**
 	 * Cette methode permettra de publier un nouveau produit et le mettre en vente
 	 * @see Enchere.SystemeEnchereOperations#publierProduit(Enchere.Utilisateur, java.lang.String, java.lang.String, java.lang.String, float, java.lang.String)
 	 */
-	@SuppressWarnings("deprecation")
 	@Override
 	public void publierProduit(Utilisateur vendeur, String nomProduit,
 			String categorieProduit, String descProduit, double prixProduit,
 			String dateProduit, SystemeEnchere ior) {
+		
 		Produit newProduit = new Produit();
 		newProduit.vendeur = new Utilisateur("","","","");
 		newProduit.id = (UUID.randomUUID().toString());
 		newProduit.categorie = (categorieProduit);
 		newProduit.description = (descProduit);
-		newProduit.nom = (nomProduit);;
+		newProduit.nom = (nomProduit);
 		newProduit.prix_depart = (prixProduit);;
 		newProduit.date_fin = (dateProduit);
 
 		
 		DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.SHORT, Locale.FRANCE);
 		try {
+			//Date fin de l'enchere
 			Date endDate = df.parse(dateProduit);
+			
 			Date now = new Date();
 			String nowstr = df.format(now);
 			now = df.parse(nowstr);
-			//now.setMinutes(now.getMinutes()+5);
 			
-			Calendar calendar = Calendar.getInstance();
+			System.out.println("Product details: "+dateProduit+"\n"+nomProduit);
+			/*Calendar calendar = Calendar.getInstance();
 			calendar.setTime(now);
 			int min = calendar.get(Calendar.MINUTE);
 			min +=5;
 			calendar.set(Calendar.MINUTE, min);
 			now = calendar.getTime();
 			
-			//Calendar.get(Calendar.MINUTE).
-			//Calendar.set(Calendar.DAY_OF_MONTH, int date).
+			
 			if (endDate.before(now)) {
 				throw new IllegalStateException("Date fin ne peut pas etre inférieure, il doit etre au moins 5mins dans le futur");
 				
-			}
+			}*/
 			//Créer une vente pour ce produit qui vient d'etre crée
-			Vente vente = new Vente(UUID.randomUUID().toString(), newProduit, new Utilisateur(), nowstr, "");
+			Vente vente = new Vente(UUID.randomUUID().toString(), newProduit, new Utilisateur("","","",""), df.format(endDate), "");
 			System.out.println("vente ID ----- "+vente.idVente);
 			
 			//Verifier la dateFin d'enchere avant d'ajouter ce produit
-			lesProduits.add(newProduit);
+			addProduit(newProduit);
+			
 			//Verifier la dateFin d'enchere avant d'ajouter la vente
 			lesVentesEnCours.add(vente);
 
@@ -351,10 +387,10 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	 * @see Enchere.SystemeEnchereOperations#demanderNotificationEnchereEnCours(Enchere.Utilisateur, Enchere.Acheteur_Vendeur)
 	 */
 	@Override
-	public void demanderNotificationEnchereEnCours(Utilisateur user,
+	public boolean demanderNotificationEnchereEnCours(Utilisateur user,
 			Produit produit, Acheteur_Vendeur ior) {
 		registerObserver(produit, ior);
-
+		return true;
 	}
 	
 	@Override
@@ -424,4 +460,5 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	}
 		
 	}
+	
 }

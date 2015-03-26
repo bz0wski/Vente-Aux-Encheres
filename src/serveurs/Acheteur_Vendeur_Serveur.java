@@ -6,9 +6,14 @@ package serveurs;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.eclipse.core.databinding.observable.Realm;
+import org.eclipse.jface.databinding.swt.SWTObservables;
+import org.eclipse.swt.widgets.Display;
 import org.omg.CORBA.ORBPackage.InvalidName;
 import org.omg.CosNaming.NameComponent;
 import org.omg.CosNaming.NamingContext;
@@ -23,12 +28,13 @@ import org.omg.PortableServer.POAPackage.ServantAlreadyActive;
 import org.omg.PortableServer.POAPackage.ServantNotActive;
 import org.omg.PortableServer.POAPackage.WrongPolicy;
 
-import clients.ClientWindow;
 import Enchere.Acheteur_Vendeur;
 import Enchere.Acheteur_VendeurHelper;
 import Enchere.Produit;
 import Enchere.SystemeEnchere;
 import Enchere.Utilisateur;
+import ui.MainClientWindow;
+import ui.SystemeEnchereWindow;
 import utility.EnchereObserver;
 
 /**
@@ -43,8 +49,32 @@ public class Acheteur_Vendeur_Serveur {
 
 	public static SystemeEnchere systemeEnchere;
 	static String IORServant = null;
+	private static ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	public static void main(String[] args) {
+	
+		/********************************************************************************************************************/
+		/******************************** LANCEMENT DE LA PARTIE SERVEUR ********************************************************/			
+		/********************************************************************************************************************/	
+		
+		server(args);
+		
+		/********************************************************************************************************************/			
+		/******************************** LANCER LA PARTIE CLIENT, CE CLIENT VA CONSULTER ******************************/			
+		/******************************** LE SERVEUR SYSTEME ENCHERE POUR LE PROCESSUS ENCHERE. ********************************/			
+		/********************************************************************************************************************/			
+	
+		client(args);
+
+		/****************************************************************************************************************************************/			
+		/****************************************************************************************************************************************/			
+		/****************************************************************************************************************************************/			
+		/****************************************************************************************************************************************/			
+
+
+	}
+	
+	private static void server(String [] args) {
 		// Intialisation de l'ORB
 		// ************************
 		org.omg.CORBA.ORB orb = org.omg.CORBA.ORB.init(args, null);
@@ -101,55 +131,31 @@ public class Acheteur_Vendeur_Serveur {
 			// Lancement de l'ORB (et mise en attente de requetes)
 			// ***************************************************
 			//lancment du client associé
-			client(args);
-			/*ExecutorService executor = Executors.newSingleThreadExecutor();
+			
 			Runnable runnable = new Runnable() {
 
 				@Override
 				public void run() {
 					
-					client(args);	
+					orb.run();
 				}
 			};
 			try {
 				executor.execute(runnable);
 				//**Important to shut the executor once it's done *//*
-			//	executor.shutdown();
 			} catch (Exception e) {
 				e.getMessage();
 			}finally{
 				executor.shutdownNow();
 			}
-			*/
 			
-			orb.run();
+			
+			
 		} catch (InvalidName | ServantAlreadyActive | WrongPolicy | AdapterInactive | IOException | NotFound | CannotProceed | org.omg.CosNaming.NamingContextPackage.InvalidName | ServantNotActive e) {
 			e.getMessage();		
 			e.printStackTrace();
 		}
-
-
-
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/		
-		/**************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-		/****************************************************************************************************************************************/			
-
-
 	}
-	
 	private static void client(String [] args) {
 		try {
 			// Intialisation de l'ORB
@@ -185,7 +191,7 @@ public class Acheteur_Vendeur_Serveur {
 
 		
 			/*********************************************TESTING QUERIES*******************************************************************************************/			
-			systemeEnchere.creerCompte("salim", "ahmed", "tripode");
+		/*	systemeEnchere.creerCompte("salim", "ahmed", "tripode");
 			systemeEnchere.creerCompte("naweed", "ahmed", "koftown");
 			Utilisateur[] users = systemeEnchere.tousLesUtilisateurs();
 			for (int i = 0; i < users.length; i++) {
@@ -196,24 +202,37 @@ public class Acheteur_Vendeur_Serveur {
 			if (IORServant != null) {
 				
 			}
-			systemeEnchere.publierProduit(users[0], "coffee", "alimentation", "fort et noir", 5.6f, "mercredi 19 mars 2015 01:18",systemeEnchere);
-			systemeEnchere.publierProduit(userUtilisateur, "milk", "alimentation", "fort et blanc", 2.6f, "mercredi 19 mars 2015 01:19",systemeEnchere);
+			systemeEnchere.publierProduit(users[0], "coffee", "alimentation", "fort et noir", 5.6f, "lundi 23 mars 2015 05:15",systemeEnchere);
+			systemeEnchere.publierProduit(userUtilisateur, "milk", "alimentation", "fort et blanc", 2.6f, "lundi 23 mars 2015 05:10",systemeEnchere);
 
-			/*Produit [] produits = systemeEnchere.tousLesProduits();
+			Produit [] produits = systemeEnchere.tousLesProduits();
 			for (int i = 0; i < produits.length; i++) {
 				System.out.println(produits[i].nom);
 			}
-			
+			*/
 			
 			if (IORServant != null) {
-				//System.out.println("IORSERVANT not null:\n"+IORServant);
 				org.omg.CORBA.Object acheteurbObject = orbClient
 						.string_to_object(IORServant);
 				Acheteur_Vendeur acheteur_Vendeur = Acheteur_VendeurHelper.narrow(acheteurbObject);
-				systemeEnchere.demanderNotificationEnchereEnCours(users[0], produits[0], acheteur_Vendeur);
+				//systemeEnchere.demanderNotificationEnchereEnCours(users[0], produits[0], acheteur_Vendeur);
 			}
 			
+			final Display display = Display.getDefault();
+			Realm.runWithDefault(SWTObservables.getRealm(display), new Runnable() {
+				@Override
+				public void run() {
+					try {
+							MainClientWindow window = new MainClientWindow(systemeEnchere);
+							window.open();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 
+
+				}
+			});
+/*
 			systemeEnchere.proposerPrix(7.3f, users[0], produits[0]);
 			systemeEnchere.proposerPrix(7.8, users[0], produits[0]);
 			systemeEnchere.proposerPrix(9.3f, users[0], produits[0]);
@@ -224,14 +243,19 @@ public class Acheteur_Vendeur_Serveur {
 						.string_to_object(IORServant);
 				Acheteur_Vendeur acheteur_Vendeur = Acheteur_VendeurHelper.narrow(acheteurbObject);
 				systemeEnchere.demanderNotificationEnchereEnCours(users[0], produits[0], acheteur_Vendeur);
-			}
-			Utilisateur user = systemeEnchere.seConnecter("salim", "ahmed");
-			if(user != null)
+			}*/
+			//Utilisateur user = systemeEnchere.seConnecter("salim", "ahmed");
+	/*		if(user != null)
 				System.out.println("Bonjour "+user.nom);
-			*//****************************************************************************************************************************************//*			
+			List<Produit> prods = Arrays.asList(systemeEnchere.rechercherProduit("milk"));
+			List<Produit> prods1 = Arrays.asList(systemeEnchere.rechercherProduit("alimentation"));
+			prods.stream().forEach(p->System.out.println("1e recherche: "+p.nom));
+			prods1.stream().forEach(p->System.out.println("2e recherche: "+p.nom));*/
+			/****************************************************************************************************************************************//*			
+			*
+			*/
 			// Appel de l'interface graphique
-			ClientWindow clientWindow = new ClientWindow();
-			clientWindow.open();*/
+			
 		} catch (Exception e) {
 			e.getMessage();
 			e.printStackTrace();

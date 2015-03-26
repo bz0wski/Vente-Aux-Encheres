@@ -57,7 +57,7 @@ public class SystemeEnchereClient {
 			archivage = Enchere.ArchivageHelper.narrow(distantArchivage);
 
 			// Appel de l'interface graphique
-			//ClientWindow clientWindow = new ClientWindow();
+			//SystemeEnchereWindow clientWindow = new SystemeEnchereWindow();
 			//clientWindow.open();
 			System.out.println("Systeme Enchere execute en tant que client..");
 		} catch (Exception e) {

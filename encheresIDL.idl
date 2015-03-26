@@ -31,6 +31,7 @@ module Enchere {
 	};
 	
 	typedef sequence<Produit> ListeProduits;
+	typedef sequence<Vente> ListeVentes;
 	
 	 interface Acheteur_Vendeur{
 		attribute ListeProduits listeproduits;
@@ -40,14 +41,15 @@ module Enchere {
     interface SystemeEnchere{
     	attribute ListeProduits tousLesProduits;
     	attribute ListeUtilisateurs tousLesUtilisateurs;
+    	attribute ListeVentes tousLesVentesEncours;
 		
 		ListeProduits consulterListeProduits();
 		ListeProduits rechercherProduit(in string critere) raises (ProduitExistePas);
 
 		/* attribut HashMap qui permet de stocker pour chaque produit la correspondance entre les acheteurs et les prix proposés*/
 		
-    	void demanderNotificationEnchereEnCours (in Utilisateur user, in Produit produit, in Acheteur_Vendeur acheteur_VendeurIOR);
-    	void creerCompte(in string username, in string userpswd, in string userAdresse);
+    	boolean demanderNotificationEnchereEnCours (in Utilisateur user, in Produit produit, in Acheteur_Vendeur acheteur_VendeurIOR);
+    	boolean creerCompte(in string username, in string userpswd, in string userAdresse);
     	Utilisateur seConnecter(in string username, in string userpswd);
     	
     	Utilisateur getAcheteurProduit(in Produit produit);
@@ -67,8 +69,12 @@ module Enchere {
     	void mettreAuxEnchere();
     	boolean archiverProduits(in ListeProduits listeproduits);
     	boolean archiverUtilisateurs(in ListeUtilisateurs listeUtilisateurs);
+    	boolean archiverVenteEncours(in ListeVentes listeVentes);
+    	boolean archiverVenteTerminees(in ListeVentes listeVentes);
     	ListeProduits chargerProduits();
     	ListeUtilisateurs chargerUtilisateurs();
+    	ListeVentes chargerVentesEncours();
+    	ListeVentes chargerVenteTerminees();
     	void statistiques();
     };
 

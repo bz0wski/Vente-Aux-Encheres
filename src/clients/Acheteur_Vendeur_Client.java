@@ -28,18 +28,18 @@ public class Acheteur_Vendeur_Client {
 	public static void main(String[] args) {
 		try {
 			// Intialisation de l'ORB
-			org.omg.CORBA.ORB orb = org.omg.CORBA.ORB.init(args, null);	
+			org.omg.CORBA.ORB orbClient = org.omg.CORBA.ORB.init(args, null);	
 
 			// Utilisation service de nommage
 			//********************************
 			// Saisie du nom de l'objet (si utilisation du service de nommage)
-			System.out.println("Quel objet Corba voulez-vous contacter ?");
+			System.out.println("Quel objet SystemeEnchere - Corba voulez-vous contacter ?");
 			BufferedReader in = new BufferedReader(new InputStreamReader(
 					System.in));
 			String idObj = in.readLine();
 
 			// Recuperation du naming service
-			NamingContext nameRoot = NamingContextHelper.narrow(orb
+			NamingContext nameRoot = NamingContextHelper.narrow(orbClient
 					.resolve_initial_references("NameService"));
 
 			// Construction du nom à rechercher
@@ -53,15 +53,13 @@ public class Acheteur_Vendeur_Client {
 			org.omg.CORBA.Object distantSystemeEnchere = nameRoot.resolve(nameToFind);
 			System.out.println("Objet '" + idObj
 					+ "' trouvé auprès du service de noms. IOR de l'objet :");
-			System.out.println(orb.object_to_string(distantSystemeEnchere));
+			System.out.println(orbClient.object_to_string(distantSystemeEnchere));
 
 			// Casting de l'objet CORBA vers le type Enchere.SystemeEnchere
 			systemeEnchere = Enchere.SystemeEnchereHelper.narrow(distantSystemeEnchere);
 
-			// Appel de l'interface graphique
-			//ClientWindow clientWindow = new ClientWindow();
-			//clientWindow.open();
-/*********************************************TESTING QUERIES*******************************************************************************************/			
+		
+			/*********************************************TESTING QUERIES*******************************************************************************************/			
 			systemeEnchere.creerCompte("salim", "ahmed", "tripode");
 			systemeEnchere.creerCompte("naweed", "ahmed", "koftown");
 			Utilisateur[] users = systemeEnchere.tousLesUtilisateurs();
@@ -69,28 +67,50 @@ public class Acheteur_Vendeur_Client {
 				System.out.println(users[i].nom);
 			}
 			Utilisateur userUtilisateur = new Utilisateur("yttft","jkhhhjk","ljjn","jhjkhj");
-			//systemeEnchere.publierProduit(userUtilisateur, "coffee", "alimentation", "fort et noir", 5.6f, "mercredi 18 mars 2015 01:21");
-			//systemeEnchere.publierProduit(userUtilisateur, "coffee", "alimentation", "fort et noir", 5.6f, "mercredi 18 mars 2015 01:21");
+			
+			
+			systemeEnchere.publierProduit(users[0], "coffee", "alimentation", "fort et noir", 5.6f, "mercredi 19 mars 2015 01:18",systemeEnchere);
+			systemeEnchere.publierProduit(userUtilisateur, "milk", "alimentation", "fort et blanc", 2.6f, "mercredi 19 mars 2015 01:19",systemeEnchere);
 
-			Produit [] produits = systemeEnchere.tousLesProduits();
+			/*Produit [] produits = systemeEnchere.tousLesProduits();
 			for (int i = 0; i < produits.length; i++) {
 				System.out.println(produits[i].nom);
 			}
-			//systemeEnchere.demanderNotificationEnchereEnCours(users[0], produits[0], ior);
 			
-			systemeEnchere.proposerPrix(7.3f, users[0], produits[0]);
-			systemeEnchere.proposerPrix(7.3f, users[0], produits[0]);
 			
+			if (IORServant != null) {
+				//System.out.println("IORSERVANT not null:\n"+IORServant);
+				org.omg.CORBA.Object acheteurbObject = orbClient
+						.string_to_object(IORServant);
+				Acheteur_Vendeur acheteur_Vendeur = Acheteur_VendeurHelper.narrow(acheteurbObject);
+				systemeEnchere.demanderNotificationEnchereEnCours(users[0], produits[0], acheteur_Vendeur);
+			}
+			
+
+			systemeEnchere.proposerPrix(7.3f, users[0], produits[0]);
+			systemeEnchere.proposerPrix(7.8, users[0], produits[0]);
+			systemeEnchere.proposerPrix(9.3f, users[0], produits[0]);
+			
+			if (IORServant != null) {
+				//System.out.println("IORSERVANT not null:\n"+IORServant);
+				org.omg.CORBA.Object acheteurbObject = orbClient
+						.string_to_object(IORServant);
+				Acheteur_Vendeur acheteur_Vendeur = Acheteur_VendeurHelper.narrow(acheteurbObject);
+				systemeEnchere.demanderNotificationEnchereEnCours(users[0], produits[0], acheteur_Vendeur);
+			}
 			Utilisateur user = systemeEnchere.seConnecter("salim", "ahmed");
 			if(user != null)
-			System.out.println("Bonjour "+user.nom);
-/****************************************************************************************************************************************/			
-		
+				System.out.println("Bonjour "+user.nom);
+			*//****************************************************************************************************************************************//*			
+			// Appel de l'interface graphique
+			SystemeEnchereWindow clientWindow = new SystemeEnchereWindow();
+			clientWindow.open();*/
 		} catch (Exception e) {
 			e.getMessage();
 			e.printStackTrace();
 		}
 
-	}
 
+
+	}
 }

@@ -64,7 +64,7 @@ public class Archivage_Serveur {
 			NameComponent[] objetSystemeEnchere = new NameComponent[2];
 			objetSystemeEnchere[0] = contexteArchivage[0];
 
-			System.out.println("Sous quel nom voulez-vous enregistrer l'objet Corba systeme Enchere ?");
+			System.out.println("Sous quel nom voulez-vous enregistrer l'objet Serveur Archivage ?");
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			String nomObj01 = in.readLine();
 
