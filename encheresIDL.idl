@@ -20,21 +20,27 @@ module Enchere {
 	double prix_depart;/*Cet attribut plus le pas sera le prix en cours */
 	string date_fin;
 	Utilisateur vendeur;
+	double prixMaxPropse;
+	
     };
 	
 	struct Vente{
 	string idVente;
 	Produit produitVendu;
 	Utilisateur acheteur;
+	//date debut de la vente
 	string debutVente;
+	//si la vente trouve un acheteur, ceci est la date où le produit est acheté
 	string finVente;
+	//date limite de terminaison de la vente precisé par le vendeur
+	string dateAchevee;
 	};
 	
 	typedef sequence<Produit> ListeProduits;
 	typedef sequence<Vente> ListeVentes;
 	
 	 interface Acheteur_Vendeur{
-		attribute ListeProduits listeproduits;
+		attribute string notification;
 		oneway void recevoirNotification (in string message);
     };
 	
@@ -54,7 +60,7 @@ module Enchere {
     	
     	Utilisateur getAcheteurProduit(in Produit produit);
     	
-		void publierProduit(in Utilisateur vendeur, in string nomProduit, in string categorieProduit, in string descProduit, in double prixProduit,in string dateProduit, in SystemeEnchere ior);
+		Produit publierProduit(in Utilisateur vendeur, in string nomProduit, in string categorieProduit, in string descProduit, in double prixProduit,in string dateProduit, in SystemeEnchere ior);
 		/* instanciation d'un objet GestionEnchere à la publication d'un nouveau produit*/
     	
 		
@@ -62,6 +68,7 @@ module Enchere {
 		/*Cette methode permettra d'enlever une vente terminée de la liste des ventes en cours */
 		void supprimerVente(in Vente vente);
 		void enleverVente(in string venteID);
+		string statistiques();
     };
 
     interface Archivage{
@@ -71,11 +78,16 @@ module Enchere {
     	boolean archiverUtilisateurs(in ListeUtilisateurs listeUtilisateurs);
     	boolean archiverVenteEncours(in ListeVentes listeVentes);
     	boolean archiverVenteTerminees(in ListeVentes listeVentes);
+    	/*boolean archiverUserNotifications();
+    	boolean archiverUserProduitPropositions();
+    	private Map<String, List<Acheteur_Vendeur>> prod_UserNotifications = new HashMap<>();
+		  private Map<String, Map<String, List<Double>>> histo_prod_User_Prix = new HashMap<>();*/
     	ListeProduits chargerProduits();
     	ListeUtilisateurs chargerUtilisateurs();
     	ListeVentes chargerVentesEncours();
     	ListeVentes chargerVenteTerminees();
-    	void statistiques();
+    	
+    	
     };
 
 };

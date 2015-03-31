@@ -82,7 +82,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	public void tousLesVentesEncours(Vente[] newTousLesVentesEncours) {
 		lesVentesEnCours = new ArrayList<Vente>(Arrays.asList(newTousLesVentesEncours));	
 	}
-	
+
 	@Override
 	public Produit[] rechercherProduit(String critere) throws ProduitExistePas {
 		//L'utilisateur presente son critere de recherche, qui peut etre le nom ou la catégorie
@@ -106,13 +106,16 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	 * 
 	 * @see Enchere.SystemeEnchereOperations#proposerPrix(float, Enchere.Utilisateur, Enchere.Produit)
 	 */
+
+
 	@Override
 	public String proposerPrix(double prix, Utilisateur user, Produit produit) {
-		if (prix < produit.prix_depart*pas.value) {
+		if (prix < produit.prix_depart) {
 			System.out.println("Prix trop bas.");
+			return "Prix trop bas.";
 		}
 		//Ajouter le pas 
-		prix *= pas.value;
+		produit.prixMaxPropse = prix;
 		try {
 			List<Double> listPropos = new ArrayList<>();
 			Map<String, List<Double>> histoProposition = new HashMap<>();
@@ -122,30 +125,30 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 				//System.out.println("Produt deja enregistré");
 				histoProposition = histo_prod_User_Prix.get(produit.id);
 				if (histoProposition.containsKey(user.id)) {
-					//System.out.println("Utilisateur existe, ajoutant a son historique.");
+					System.out.println("Utilisateur existe, ajoutant a son historique.");
 					List<Double> props = histoProposition.get(user.id);
-					
+
 					props.stream().forEach(d->listPropos.add(d));
-					
+
 					listPropos.add(prix);
-					//listPropos.stream().forEach(d->System.out.println("After adding prix: "+d));
+
 					histoProposition.put(user.id, listPropos);
 					histo_prod_User_Prix.put(produit.id, histoProposition);
 				} else {
-					//System.out.println("Premiere proposition de cet Utilisateur.");
+					System.out.println("Premiere proposition de cet Utilisateur.");
 					listPropos.add(prix);
 					histoProposition.put(user.id, listPropos);
 					histo_prod_User_Prix.put(produit.id, histoProposition);
 				}
 			} else {
-				//System.out.println("Produt non existant.");
+				System.out.println("Produt non existant.");
 				listPropos.add(prix);
 				histoProposition.put(user.id, listPropos);
 				histo_prod_User_Prix.put(produit.id, histoProposition);
 
 			}
 
-
+			/*
 			System.out.println("Les produits");
 			for (java.util.Map.Entry<String, Map<String, List<Double>>>   x : histo_prod_User_Prix.entrySet()) {
 				System.out.println("Produit: "+x.getKey());
@@ -159,13 +162,14 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 				}
 			}
 
-
+			 */
 			histoProposition = histo_prod_User_Prix.get(produit.id);
+
 			List<Double> listPrix = new ArrayList<>();
 			for (java.util.Map.Entry<String, List<Double>> entry : histoProposition.entrySet()) {
-				
+
 				for (Double db : entry.getValue()) {
-					
+
 					listPrix.add(db);
 				}
 			}
@@ -174,19 +178,41 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 
 			//Ordonner la liste des prix 	
 			listPrix.sort((n1,n2)->n1.compareTo(n2));
-			//System.out.println("Prix proposés ordonnés\n"+listPrix);
+
+			System.out.println("Prix proposés ordonnés\n"+listPrix);
 
 			if (listPrix.size() > 1) {
+				System.out.println("Plus de deux prix proposé, choisissant le max.");
+
 				//modifier le prix du produit
-				produit.prix_depart = (listPrix.get(listPrix.size()-1));
-				
+				Double newprix = (listPrix.get(listPrix.size()-2));
+				Double highest = listPrix.get(listPrix.size()-1);
+
+				newprix *= pas.value;
+				if (newprix>highest) 
+					produit.prix_depart = highest;
+				else 
+					produit.prix_depart = newprix;
+
+
+
+				System.out.println("PRIX MODIFIE "+produit.prix_depart);
+
+				//Replace the produit with the new one with the new price 
+				for (int i = 0; i < lesProduits.size(); i++) {
+					if (produit.id.equals(lesProduits.get(i).id)) {
+						lesProduits.remove(i);
+						lesProduits.add(i, produit);
+						System.out.println("replaced the product");
+					}
+				}
 				//prix modifié, il faut notifier les parties concernées
 				notifyObserver(produit);
 			}
 		} catch (Exception e) {
 			e.getMessage();
 		}
-		return "";
+		return "Prix modifié";
 	}
 
 
@@ -207,7 +233,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		newUtilisateur.adresse = userAdresse;
 
 		addUser(newUtilisateur);
-		
+
 		return true;
 		//System.out.println("Utilisateur ajouté: \nNom: "+newUtilisateur.nom+"");
 	}
@@ -217,7 +243,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 			lesUtilisateurs.add(user);
 		}
 	}
-	
+
 	private void addProduit(Produit produit) {
 		synchronized (lesProduits) {
 			lesProduits.add(produit);
@@ -230,34 +256,34 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	 */
 	@Override
 	public Utilisateur seConnecter(String username, String userpswd) {
-			if (lesUtilisateurs.isEmpty()) {
+		if (lesUtilisateurs.isEmpty()) {
 			return new Utilisateur("", "", "", "");
 		}
-		
+
 		Optional<Utilisateur> newUser = Optional.ofNullable(null);
 		newUser = lesUtilisateurs.stream().filter(u-> u.nom.equals(username) && u.mdp.equals(userpswd)).findFirst();
-	
+
 		//Si utilisateur n'est pas dans la BD retourne null.
 		if(!newUser.isPresent())
 			return new Utilisateur("", "", "", "");
 		return newUser.get();
-		
+
 		/*	for (Utilisateur u : lesUtilisateurs) {
 		if (u.nom.equals(username) && u.mdp.equals(userpswd)) {
 			return u;
 		}
 	}*/
-		
+
 	}
 	/**
 	 * Cette methode permettra de publier un nouveau produit et le mettre en vente
 	 * @see Enchere.SystemeEnchereOperations#publierProduit(Enchere.Utilisateur, java.lang.String, java.lang.String, java.lang.String, float, java.lang.String)
 	 */
 	@Override
-	public void publierProduit(Utilisateur vendeur, String nomProduit,
+	public Produit publierProduit(Utilisateur vendeur, String nomProduit,
 			String categorieProduit, String descProduit, double prixProduit,
 			String dateProduit, SystemeEnchere ior) {
-		
+
 		Produit newProduit = new Produit();
 		newProduit.vendeur = new Utilisateur("","","","");
 		newProduit.id = (UUID.randomUUID().toString());
@@ -267,45 +293,48 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		newProduit.prix_depart = (prixProduit);;
 		newProduit.date_fin = (dateProduit);
 
-		
+
 		DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.SHORT, Locale.FRANCE);
 		try {
 			//Date fin de l'enchere
 			Date endDate = df.parse(dateProduit);
-			
+
 			Date now = new Date();
 			String nowstr = df.format(now);
 			now = df.parse(nowstr);
-			
-			System.out.println("Product details: "+dateProduit+"\n"+nomProduit);
+
+			//System.out.println("Product details: "+dateProduit+"\n"+nomProduit);
 			/*Calendar calendar = Calendar.getInstance();
 			calendar.setTime(now);
 			int min = calendar.get(Calendar.MINUTE);
 			min +=5;
 			calendar.set(Calendar.MINUTE, min);
 			now = calendar.getTime();
-			
-			
+
+
 			if (endDate.before(now)) {
 				throw new IllegalStateException("Date fin ne peut pas etre inférieure, il doit etre au moins 5mins dans le futur");
-				
+
 			}*/
 			//Créer une vente pour ce produit qui vient d'etre crée
-			Vente vente = new Vente(UUID.randomUUID().toString(), newProduit, new Utilisateur("","","",""), df.format(endDate), "");
-			System.out.println("vente ID ----- "+vente.idVente);
-			
+			Vente vente = new Vente(UUID.randomUUID().toString(), newProduit, new Utilisateur("","","",""), df.format(now),"", df.format(endDate));
+			//System.out.println("vente ID ----- "+vente.idVente);
+
 			//Verifier la dateFin d'enchere avant d'ajouter ce produit
 			addProduit(newProduit);
-			
+
 			//Verifier la dateFin d'enchere avant d'ajouter la vente
 			lesVentesEnCours.add(vente);
 
 			//demarré un compteur qui mettra fin à la vente quand le temps s'acheve
 			Timer timer = new Timer(nomProduit+"Timer",true );
 			timer.schedule(new TerminerVente(vente,ior), endDate);
+
+
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+		return newProduit;
 	}
 
 	/**
@@ -315,30 +344,30 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	 */
 	//you cannot reference a non-final variable in an anonymous class' method
 	private double max; private String remporte;
-	
+
 	public Utilisateur getAcheteurProduit(Produit produit) {
 		Map<String, List<Double>> map = new  HashMap<String, List<Double>>();
-				map = histo_prod_User_Prix.get(produit.id);
+		map = histo_prod_User_Prix.get(produit.id);
 		if (map != null) {
 			//S'il n'y a eu aucune proposition de prix pour ce produit
 			if (map.isEmpty()) {
 				System.out.println("aucune proposition de prix pour ce produit");
 				return new Utilisateur("", "", "", "");
 			}
-			
+
 			//initialize the variables to be sure the right op is carried out
 			remporte = ""; max = 0;
 
 			map.forEach((u,p)->{ p.stream().forEach(prix-> {  if(prix>max) 
-																	{max = prix; remporte = u;}}); });
-			
+			{max = prix; remporte = u;}}); });
+
 			Utilisateur user = getUtilisateur(remporte);
 			if(user != null)
 				System.out.println("Max price: "+max+"\nUsername: "+user.nom);
 			return user;
 
 		}else 
-		return new Utilisateur("", "", "", "");
+			return new Utilisateur("", "", "", "");
 	}
 	/**
 	 * Cette methode permet de recuperer un utilisateur a partir de son ID
@@ -352,21 +381,21 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	/*public Vente getVente(String uuid) {
 		return lesVentesEnCours.parallelStream().filter(v->v.idVente.equals(uuid)).findFirst().get();
 	}*/
-	
 
-	
-//	public boolean enleverVente(Vente v) {
-//		if (lesVentesEnCours == null) {
-//			System.out.println("List vente is null");
-//			return false;
-//			}
-//		else {
-//			System.out.println("List vente is NOT null");
-//		}
-		//System.out.println("Liste Ventes: "+lesVentesEnCours);
-		//if (lesVentesEnCours.isEmpty()) 
-		//	return false;
-		/*
+
+
+	//	public boolean enleverVente(Vente v) {
+	//		if (lesVentesEnCours == null) {
+	//			System.out.println("List vente is null");
+	//			return false;
+	//			}
+	//		else {
+	//			System.out.println("List vente is NOT null");
+	//		}
+	//System.out.println("Liste Ventes: "+lesVentesEnCours);
+	//if (lesVentesEnCours.isEmpty()) 
+	//	return false;
+	/*
 		for (Vente vente : lesVentesEnCours) {
 			if (vente != null) {
 				if (vente.idVente.equals(v.idVente)) {
@@ -392,7 +421,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		registerObserver(produit, ior);
 		return true;
 	}
-	
+
 	@Override
 	public void notifyObserver(Produit p) {
 		if (prod_UserNotifications.containsKey(p.id)){
@@ -402,23 +431,28 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 				acheteur_Vendeur.recevoirNotification("Le prix de "+p.nom+" a evolué, nouveau prix est "+p.prix_depart);
 			}
 		}
-		
+
 	}
+
 	@Override
 	public void registerObserver(Produit p, Acheteur_Vendeur o) {
 		if (prod_UserNotifications.containsKey(p.id)) {
 			List<Acheteur_Vendeur> list = new ArrayList<>();
 			list = prod_UserNotifications.get(p.id);
-			list.add(o);
-			prod_UserNotifications.put(p.id, list);
+			if (!list.contains(o)) {
+				list.add(o);
+				prod_UserNotifications.put(p.id, list);
+			}else {
+				System.out.println("didnt re add user");
+			}			
 		} else {
 			List<Acheteur_Vendeur> list = new ArrayList<>();
 			list.add(o);
 			prod_UserNotifications.put(p.id, list);
 		}
-		
+
 	}
-	
+
 	@Override
 	public void unregisterObserver(Produit p, Acheteur_Vendeur o) {
 		if (prod_UserNotifications.containsKey(p.id)) {
@@ -427,38 +461,171 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 			if (list.contains(o)) {
 				list.remove(o);
 			}
-		prod_UserNotifications.put(p.id, list);
+			prod_UserNotifications.put(p.id, list);
 		}
-		
+
 	}
 	@Override
 	public void supprimerVente(Vente vente) {
-		
+
 	}
+
 	@Override
 	public void enleverVente(String venteID) {
 		if (lesVentesEnCours == null) {
-		System.out.println("List vente is null");
-		return;
+			System.out.println("List vente is null");
+			return;
 		}
-	else {
-		System.out.println("List vente is NOT null");
-	}
-	if (lesVentesEnCours.isEmpty()) 
-		return ;
-	
-	for (Vente vente : lesVentesEnCours) {
-		if (vente != null) {
-			if (vente.idVente.equals(venteID)) {
-				this.lesVentesEnCours.remove(vente);
-				System.out.println("This vente removed "+venteID);
-				return;
+		else {
+			System.out.println("List vente is NOT null");
+		}
+		if (lesVentesEnCours.isEmpty()) 
+			return ;
+
+		for (Vente vente : lesVentesEnCours) {
+			if (vente != null) {
+				if (vente.idVente.equals(venteID)) {
+
+					//remove the product associated with this sale
+					for (Produit produit : lesProduits) {
+						if (produit != null) {
+							if (produit.id.equals(vente.produitVendu.id)) {
+								//from the list of products in the system
+								lesProduits.remove(produit);
+								if (histo_prod_User_Prix.containsKey(produit.id)) {
+									//and from the mapping of products and user price propositions
+									histo_prod_User_Prix.remove(produit.id);
+								}
+							}
+						}
+					}
+
+					//Now remove the sale itself
+					this.lesVentesEnCours.remove(vente);
+					System.out.println("This vente removed "+venteID);
+					return;
+				}
+			}else {
+				System.out.println("A vente is null");
 			}
-		}else {
-			System.out.println("A vente is null");
 		}
+
 	}
-		
+	private Produit findProduit(String id){
+		Optional<Produit> optional = Optional.empty();
+		optional = lesProduits.stream().filter(p->p.id.equals(id)).findFirst();
+		if(optional.isPresent())
+			return optional.get();
+		return null;
 	}
 	
+	
+	private Utilisateur findUser(String id){
+		Optional<Utilisateur> optional = Optional.empty();
+		optional = lesUtilisateurs.stream().filter(u->u.id.equals(id)).findFirst();
+		if(optional.isPresent())
+			return optional.get();
+		return null;
+	}
+	
+	
+	@Override
+	public String statistiques() {
+		StringBuilder builder = new StringBuilder();
+		int userMaxProp = 0;
+		int prodMaxProp = 0;
+		String prodId = "";
+		String UserId = "";
+
+		double totalDePropositions = 0;
+		
+		String userwithMaxProp = "";
+		String produitwithMaxProp = "";
+		int maxProd = 0;
+		int maxUser = 0;
+		
+		double maxProp = 0;
+
+		builder.append("Le produit avec les plus de propositions.");
+		for (java.util.Map.Entry<String, Map<String, List<Double>>>   x : histo_prod_User_Prix.entrySet()) {
+			//pour chaque produit...
+			for (java.util.Map.Entry<String, List<Double>>  g : x.getValue().entrySet()) {
+				//sommer tous les propositions de tous les utilisateurs
+				prodMaxProp+=g.getValue().size();
+				
+				//Récupérer le nombre de propositions pour chaque utilisateur
+				userMaxProp = g.getValue().size();
+				
+				if (userMaxProp>maxUser) {
+					maxUser = userMaxProp;
+					UserId = g.getKey();
+					userMaxProp = 0;
+				}
+					for (Double db : g.getValue()) {
+						if (db>maxProp) {
+							maxProp = db;
+							produitwithMaxProp = x.getKey();
+							userwithMaxProp = g.getKey();
+						}
+						totalDePropositions+=db;
+					}
+
+			}
+			if (prodMaxProp>maxProd) {
+				maxProd = prodMaxProp;
+				prodId = x.getKey();
+				prodMaxProp = 0;
+			}
+		}
+		Produit produit = findProduit(prodId);
+		if (produit != null) {
+			builder.append("Nom du produit: "+produit.nom +" \tNombre de propositions: "+maxProd);
+		}else {
+			builder.append("Aucun résultat.");
+		}
+		maxProd = 0;	
+
+		builder.append("Utilisateur avec les plus de propositions.");
+		Utilisateur user = findUser(UserId);
+		if (user != null) {
+			builder.append("Nom de l'utilisateur: "+user.nom +" \tNombre de propositions: "+maxUser);
+		} else {
+			builder.append("Aucun résultat.");
+		}
+		maxUser = 0;
+
+		builder.append("Utilisateur avec la plus grande proposition.");
+		Utilisateur user2 = findUser(userwithMaxProp);
+		if (user2 != null) {
+			builder.append("Nom de l'utilisateur: "+user2.nom +" \tMontant de proposition: "+maxProp);
+		} else {
+			builder.append("Aucun résultat.");
+		}
+		
+		
+		builder.append("Le produit le plus cher");
+		maxProp = 0; prodId = "";
+		for (Produit p : lesProduits) {
+			if (p.prix_depart>maxProd) {
+				prodId = p.id;
+				maxProp = p.prix_depart;
+			}
+		}
+		produit = null;
+		produit = findProduit(prodId);
+		if (produit != null) {
+			builder.append("Nom du produit: "+produit.nom +" \tPrix: "+maxProp);
+		}else {
+			builder.append("Aucun résultat.");
+		}
+
+		
+		builder.append("Le produit le moins cher");
+		
+		builder.append("Montant Total de tous les propositions.");
+		builder.append(totalDePropositions);
+
+		return builder.toString();
+	}
+
 }

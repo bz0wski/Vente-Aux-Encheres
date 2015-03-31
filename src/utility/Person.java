@@ -28,7 +28,7 @@ public class Person extends MyAbstractModelObject{
 		public void setName(String nom) {
 			String oldName = this.name;
 			this.name = nom;
-			System.out.println("Set NAme");
+			
 			propertyChangeSupport.firePropertyChange("nom", oldName, name);
 		}
 
@@ -45,7 +45,7 @@ public class Person extends MyAbstractModelObject{
 		public void setPswd(String mdp) {
 			String oldMdp = this.pswd;
 			this.pswd = mdp;
-			System.out.println("Set pswd");
+			
 			propertyChangeSupport.firePropertyChange("mdp", oldMdp, mdp);
 		}
 		/**

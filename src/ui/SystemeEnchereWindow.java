@@ -63,10 +63,7 @@ public class SystemeEnchereWindow {
 				return;
 			}
 				
-			
-			archivage.archiverProduits(systemeEnchere.tousLesProduits());
-			archivage.archiverUtilisateurs(systemeEnchere.tousLesUtilisateurs());
-			archivage.archiverVenteEncours(systemeEnchere.tousLesVentesEncours());
+			saveSystemState();
 			
 			
 		});
@@ -114,8 +111,22 @@ public class SystemeEnchereWindow {
 		text.setLayoutData(fd_text);
 		
 		
+		Button btn1 = new Button(composite, SWT.NONE);
+		
+		btn1.setText("Afficher Statistiques");
+		btn1.setEnabled(false);
+		FormData fd_btn1 = new FormData();
+
+		fd_btn1.top = new FormAttachment(text, 5, SWT.BOTTOM);
+		fd_btn1.left = new FormAttachment(0,10);
+		fd_btn1.bottom = new FormAttachment(100, -10);
+		btn1.setLayoutData(fd_btn1);
+		
+		btn1.addListener(SWT.Selection, listener->{
+			systemeEnchere.statistiques();
+		});
+
 		Button btnLancerServeur = new Button(composite, SWT.PUSH);
-		btnLancerServeur.setText("Lancer serveur");
 		FormData fd_btnLancerServeur = new FormData();
 		
 		fd_btnLancerServeur.top = new FormAttachment(text,5,SWT.BOTTOM);
@@ -127,7 +138,7 @@ public class SystemeEnchereWindow {
 		btnLancerServeur.setToolTipText("Lancer le Serveur");
 		
 		btnLancerServeur.addListener(SWT.Selection, listener->{
-			System.out.println("push button");
+			
 		});
 		
 		DataBindingContext context = new DataBindingContext();
@@ -137,8 +148,28 @@ public class SystemeEnchereWindow {
 		context.bindValue(widget, modelValue);
 		text.setText(builder.toString());
 		
+		Button btn3 = new Button(composite, SWT.NONE);
+		
+		btn3.setText("Sauvegarder Etat \nSystème");
+		
+		FormData fd_btn3 = new FormData();
+
+		fd_btn3.top = new FormAttachment(text, 5, SWT.BOTTOM);
+		fd_btn3.right = new FormAttachment(text,0,SWT.RIGHT);
+		fd_btn3.bottom = new FormAttachment(100, -10);
+		btn3.setLayoutData(fd_btn3);
+		
+		btn3.addListener(SWT.Selection, listener->{
+			saveSystemState();
+		});
+		
 	}
 	
+	private void saveSystemState() {
+		archivage.archiverProduits(systemeEnchere.tousLesProduits());
+		archivage.archiverUtilisateurs(systemeEnchere.tousLesUtilisateurs());
+		archivage.archiverVenteEncours(systemeEnchere.tousLesVentesEncours());
+	}
 	public void appendTo(String str) {
 		builder.append(str);
 

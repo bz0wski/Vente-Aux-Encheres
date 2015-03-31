@@ -36,6 +36,7 @@ import Enchere.Utilisateur;
 import ui.MainClientWindow;
 import ui.SystemeEnchereWindow;
 import utility.EnchereObserver;
+import utility.NotificationHandler;
 
 /**
  * @author Salim AHMED
@@ -49,7 +50,11 @@ public class Acheteur_Vendeur_Serveur {
 
 	public static SystemeEnchere systemeEnchere;
 	static String IORServant = null;
+	private static Object lock = new Object();
+	private static boolean updateUI = false;
 	private static ExecutorService executor = Executors.newSingleThreadExecutor();
+	
+	private static ExecutorService executor1 = Executors.newSingleThreadExecutor();
 
 	public static void main(String[] args) {
 	
@@ -156,6 +161,8 @@ public class Acheteur_Vendeur_Serveur {
 			e.printStackTrace();
 		}
 	}
+	
+	
 	private static void client(String [] args) {
 		try {
 			// Intialisation de l'ORB
@@ -202,40 +209,50 @@ public class Acheteur_Vendeur_Serveur {
 			if (IORServant != null) {
 				
 			}
-			systemeEnchere.publierProduit(users[0], "coffee", "alimentation", "fort et noir", 5.6f, "lundi 23 mars 2015 05:15",systemeEnchere);
-			systemeEnchere.publierProduit(userUtilisateur, "milk", "alimentation", "fort et blanc", 2.6f, "lundi 23 mars 2015 05:10",systemeEnchere);
+			systemeEnchere.publierProduit(users[0], "coffee", "alimentation", "fort et noir", 5.6f, "dimanche 29 mars 2015 05:15",systemeEnchere);
+			systemeEnchere.publierProduit(userUtilisateur, "milk", "alimentation", "fort et blanc", 2.6f, "dimanche 29 mars 2015 05:10",systemeEnchere);
 
 			Produit [] produits = systemeEnchere.tousLesProduits();
 			for (int i = 0; i < produits.length; i++) {
 				System.out.println(produits[i].nom);
 			}
+			
 			*/
 			
-			if (IORServant != null) {
-				org.omg.CORBA.Object acheteurbObject = orbClient
-						.string_to_object(IORServant);
-				Acheteur_Vendeur acheteur_Vendeur = Acheteur_VendeurHelper.narrow(acheteurbObject);
-				//systemeEnchere.demanderNotificationEnchereEnCours(users[0], produits[0], acheteur_Vendeur);
-			}
 			
 			final Display display = Display.getDefault();
 			Realm.runWithDefault(SWTObservables.getRealm(display), new Runnable() {
 				@Override
 				public void run() {
 					try {
-							MainClientWindow window = new MainClientWindow(systemeEnchere);
+						if (IORServant != null) {
+							org.omg.CORBA.Object acheteurbObject = orbClient
+									.string_to_object(IORServant);
+							Acheteur_Vendeur acheteur_Vendeur = Acheteur_VendeurHelper.narrow(acheteurbObject);
+						
+							MainClientWindow window = new MainClientWindow(systemeEnchere, acheteur_Vendeur);
+							
+							//Add this instance of MainClientWindow to the list of all clients opened atm.
+							//NotificationHandler.addElement(window);
+						
 							window.open();
+						}
+							
 					} catch (Exception e) {
 						e.printStackTrace();
+					}finally{
+						executor.shutdown();
 					}
 
 
 				}
 			});
-/*
-			systemeEnchere.proposerPrix(7.3f, users[0], produits[0]);
-			systemeEnchere.proposerPrix(7.8, users[0], produits[0]);
-			systemeEnchere.proposerPrix(9.3f, users[0], produits[0]);
+			
+
+	/*		systemeEnchere.proposerPrix(17.3f, users[0], produits[0]);
+			systemeEnchere.proposerPrix(25.8, users[0], produits[0]);
+			systemeEnchere.proposerPrix(35.3f, users[0], produits[0]);
+			systemeEnchere.proposerPrix(56.3f, users[0], produits[0]);
 			
 			if (IORServant != null) {
 				//System.out.println("IORSERVANT not null:\n"+IORServant);
@@ -243,7 +260,9 @@ public class Acheteur_Vendeur_Serveur {
 						.string_to_object(IORServant);
 				Acheteur_Vendeur acheteur_Vendeur = Acheteur_VendeurHelper.narrow(acheteurbObject);
 				systemeEnchere.demanderNotificationEnchereEnCours(users[0], produits[0], acheteur_Vendeur);
-			}*/
+			}
+		*/	
+			
 			//Utilisateur user = systemeEnchere.seConnecter("salim", "ahmed");
 	/*		if(user != null)
 				System.out.println("Bonjour "+user.nom);

@@ -9,13 +9,14 @@ import org.eclipse.core.databinding.DataBindingContext;
 import org.eclipse.core.databinding.UpdateValueStrategy;
 import org.eclipse.core.databinding.beans.BeanProperties;
 import org.eclipse.core.databinding.observable.value.IObservableValue;
-import org.eclipse.core.databinding.observable.value.WritableValue;
 import org.eclipse.core.databinding.validation.IValidator;
 import org.eclipse.core.databinding.validation.ValidationStatus;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.databinding.fieldassist.ControlDecorationSupport;
 import org.eclipse.jface.databinding.swt.WidgetProperties;
+import org.eclipse.jface.dialogs.ControlAnimator;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Listener;
@@ -28,10 +29,12 @@ import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormAttachment;
 
 import utility.Proposition;
+import Enchere.Acheteur_Vendeur;
 import Enchere.Produit;
 import Enchere.SystemeEnchere;
 import Enchere.Utilisateur;
 import Enchere.pas;
+
 
 public class EncherirWindow extends Dialog {
 
@@ -40,22 +43,23 @@ public class EncherirWindow extends Dialog {
 
 	private Text prixencours;
 	private Text votrePrix;
-	
+
 	private final Produit produit;
 	private final SystemeEnchere systemeEnchere;
 	private final Utilisateur utilisateur;
+	private final Acheteur_Vendeur acheteur_Vendeur;
 
-	private PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
-	
 	Proposition proposition =  new Proposition();
-	
+	boolean receiveNotifications = false;
+
 	private IStatus status;
+	private Button btnNotifications;
 	/**
 	 * Create the dialog.
 	 * @param parent
 	 * @param style
 	 */
-	public EncherirWindow(Shell parent, Produit produit, SystemeEnchere systemeEnchere, Utilisateur user) {
+	public EncherirWindow(Shell parent, Produit produit, SystemeEnchere systemeEnchere, Utilisateur user, Acheteur_Vendeur ior) {
 		super(parent);		
 		this.produit = produit;
 
@@ -64,6 +68,8 @@ public class EncherirWindow extends Dialog {
 		this.systemeEnchere = systemeEnchere;
 
 		this.utilisateur = user;
+
+		this.acheteur_Vendeur = ior;
 	}
 
 	/**
@@ -132,41 +138,57 @@ public class EncherirWindow extends Dialog {
 		fd_votrePrix.left = new FormAttachment(lblVotrePrix, 5, SWT.RIGHT);
 		votrePrix.setLayoutData(fd_votrePrix);
 
+		btnNotifications = new Button(shell, SWT.CHECK);
+		FormData fd_btnNotifications = new FormData();
+		fd_btnNotifications.top = new FormAttachment(votrePrix, 7, SWT.BOTTOM);
+		fd_btnNotifications.right = new FormAttachment(votrePrix, 0, SWT.RIGHT);
+		btnNotifications.setLayoutData(fd_btnNotifications);
+		btnNotifications.setText("Notifications");
+
+		btnNotifications.addListener(SWT.Selection, listener->{
+			receiveNotifications =  btnNotifications.getSelection();
+		});
+
 		Button button = new Button(shell, SWT.PUSH);
 		button.setText("Valider");
 		button.setEnabled(false);
 		FormData fd_button = new FormData();
 
-		fd_button.right = new FormAttachment(votrePrix, 0, SWT.RIGHT);
-		fd_button.top = new FormAttachment(votrePrix, 7, SWT.BOTTOM);
+		fd_button.right = new FormAttachment(btnNotifications, 0, SWT.RIGHT);
+		fd_button.top = new FormAttachment(btnNotifications, 7, SWT.BOTTOM);
 		button.setLayoutData(fd_button);
 
 		button.addListener(SWT.Selection, listener->{
-			if (status == ValidationStatus.ok()) {
+			if (status == ValidationStatus.OK_STATUS) {
+
 				Double prix = Double.parseDouble(proposition.getProposition());
-				
+
 				systemeEnchere.proposerPrix(prix, utilisateur, produit);
+				if (receiveNotifications) {
+					systemeEnchere.demanderNotificationEnchereEnCours(utilisateur, produit, acheteur_Vendeur);
+				}
+				
 				shell.close();
 				shell.dispose();
 			}
-			
+
 
 		});
-	
-		Listener l = listener->{
-			System.out.println(status);
+
+		/*Listener l = listener->{
+
 			if (status == ValidationStatus.OK_STATUS) {
-				if(!proposition.getProposition().isEmpty())
+
 					button.setEnabled(true);
 			}
 			else {
 				button.setEnabled(false);
 			}
 		};
-		
-		votrePrix.addListener(SWT.Modify, l);
-		
-		
+
+		votrePrix.addListener(SWT.Modify, l);*/
+
+
 		/////////////////////////////////////////////Prix Validation////////////////////////////////////////////////////////////
 		//Adding a validator so that only a the right sum will be accepted
 		IValidator prixValidator = new IValidator() {
@@ -175,25 +197,29 @@ public class EncherirWindow extends Dialog {
 				if (value instanceof String) {
 					String s = String.valueOf(value).trim();
 					try {
-					    Double t_prixDouble = Double.parseDouble(s);
-					    
-					    if (t_prixDouble < produit.prix_depart*pas.value) {					    	
-					    	setStatus(ValidationStatus.error("Votre proposition est trop base"));
-					    	ValidationStatus.error("Votre proposition est trop base");
+						Double t_prixDouble = Double.parseDouble(s);
+
+						if (t_prixDouble > produit.prix_depart) {					    	
+							status = ValidationStatus.ok();
+							button.setEnabled(true);
+							return ValidationStatus.ok();	
 						}
-						
-						status = ValidationStatus.ok();
-						return ValidationStatus.ok();
+
+						setStatus(ValidationStatus.error("Votre proposition est trop base"));
+						ValidationStatus.error("Votre proposition est trop base");
+
 					} catch (Exception e) {
 						if (e instanceof NumberFormatException) {					
 							setStatus(ValidationStatus.error("Prix Invalide"));
+							button.setEnabled(false);
 							return ValidationStatus.error("Prix Invalide");
 						}
 					}
-					
+
 				}
 
 				status = ValidationStatus.error("Prix Invalide");
+				button.setEnabled(false);
 				return ValidationStatus.error("Prix Invalide");
 			}
 		}; 
@@ -203,8 +229,8 @@ public class EncherirWindow extends Dialog {
 		IObservableValue prixmodel = BeanProperties.value(Proposition.class, "proposition").
 				observe(proposition);
 		UpdateValueStrategy prixstrategy = new UpdateValueStrategy();
-		prixstrategy.setBeforeSetValidator(prixValidator);
-
+		//prixstrategy.setBeforeSetValidator(prixValidator);
+		prixstrategy.setAfterGetValidator(prixValidator);
 
 
 		//Binding the validator to the value and update strategy
@@ -213,7 +239,12 @@ public class EncherirWindow extends Dialog {
 		//Adding some decoration
 		ControlDecorationSupport.create(prixbinding, SWT.RIGHT|SWT.TOP);	
 
+		Control[] tabList = {prixencours, votrePrix,btnNotifications,button};
+
+		shell.setTabList(tabList);
 		shell.pack();
+
+
 	}
 
 	/**
@@ -228,23 +259,6 @@ public class EncherirWindow extends Dialog {
 	 */
 	public void setStatus(IStatus status) {
 		this.status = status;
-	}
-
-	/**
-	 * Adds basic JavaBeans support  
-	 * @param propertyName : The name of the property to which to add the {@code PropertyChangeListener}.
-	 * @param listener : The {@code PropertyChangeListener} to add
-	 */
-	public void addPropertyChangeListener(String propertyName,
-			PropertyChangeListener listener) {
-		propertyChangeSupport.addPropertyChangeListener(propertyName, listener);
-	}
-	/**
-	 * Removes basic JavaBeans support  
-	 * @param listener : The {@code PropertyChangeListener} to remove.
-	 */
-	public void removePropertyChangeListener(PropertyChangeListener listener) {
-		propertyChangeSupport.removePropertyChangeListener(listener);
 	}
 
 }

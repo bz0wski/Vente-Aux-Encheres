@@ -1,6 +1,5 @@
 package ui;
 
-import java.beans.PropertyChangeSupport;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -12,7 +11,6 @@ import org.eclipse.core.databinding.UpdateValueStrategy;
 import org.eclipse.core.databinding.beans.BeanProperties;
 import org.eclipse.core.databinding.observable.value.DateAndTimeObservableValue;
 import org.eclipse.core.databinding.observable.value.IObservableValue;
-import org.eclipse.core.databinding.observable.value.WritableValue;
 import org.eclipse.core.databinding.validation.IValidator;
 import org.eclipse.core.databinding.validation.ValidationStatus;
 import org.eclipse.core.runtime.IStatus;
@@ -33,6 +31,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import utility.Product;
+import Enchere.Acheteur_Vendeur;
 import Enchere.Produit;
 import Enchere.SystemeEnchere;
 import Enchere.Utilisateur;
@@ -54,7 +53,10 @@ public class AjouterProduitWindow extends Dialog{
 
 	private final SystemeEnchere systemeEnchere;
 	private final Utilisateur utilisateur;
+	private final Acheteur_Vendeur acheteur_Vendeur;
 
+	private boolean receiveNotifications = false;
+	
 	private IStatus nomStatus;
 	private IStatus catStatus;
 	private IStatus dateTimeStatus;
@@ -65,11 +67,12 @@ public class AjouterProduitWindow extends Dialog{
 	 * @param systeme
 	 * @param user
 	 */
-	public AjouterProduitWindow(Shell parent, SystemeEnchere systeme, Utilisateur user) {
+	public AjouterProduitWindow(Shell parent, SystemeEnchere systeme, Utilisateur user, Acheteur_Vendeur ior) {
 		super(parent);
 		setText("Ajouter Nouveau Produit");
 		this.systemeEnchere = systeme;
 		this.utilisateur = user;
+		this.acheteur_Vendeur = ior;
 	}
 
 
@@ -185,7 +188,7 @@ public class AjouterProduitWindow extends Dialog{
 		fd_time.top = new FormAttachment(lblDateFin, 6);
 		time.setLayoutData(fd_time);
 
-		Calendar calendar = Calendar.getInstance();
+		//Calendar calendar = Calendar.getInstance();
 		DateFormat format = DateFormat.getDateTimeInstance(DateFormat.FULL,DateFormat.SHORT,  Locale.FRANCE);
 
 		/*dateFin.addListener(SWT.Selection, listener->{
@@ -239,8 +242,13 @@ public class AjouterProduitWindow extends Dialog{
 			Double prix = Double.valueOf(product.getPrixProduit());
 			String date = format.format(product.getDate());
 
-			systemeEnchere.publierProduit(utilisateur, product.getNomProduit(), product.getCatProduit(),
+			produit = systemeEnchere.publierProduit(utilisateur, product.getNomProduit(), product.getCatProduit(),
 					product.getDescProduit(), prix, date , systemeEnchere);
+			if (receiveNotifications) {
+				if(systemeEnchere.demanderNotificationEnchereEnCours(utilisateur, produit, acheteur_Vendeur))
+					System.out.println("DEMANDER NOTIFICATIONS");
+			}
+			
 			shell.close();
 			shell.dispose();
 
@@ -301,16 +309,16 @@ public class AjouterProduitWindow extends Dialog{
 					calendar.add(Calendar.MINUTE, 5);
 					now = calendar.getTime();
 
-					System.out.println("Date i set "+format.format(dateEnd)+"\n\nNow + five mins : "+format.format(now));
+					//System.out.println("Date i set "+format.format(dateEnd)+"\n\nNow + five mins : "+format.format(now));
 
 					if (dateEnd.after(now)) {
-						System.out.println("\nAFTER\n");
+					
 						dateTimeStatus = (ValidationStatus.ok());
 						//product.setDate(dateEnd); 
 						return ValidationStatus.ok();
 					}
 					else {
-						System.out.println("\nNOT AFTER\n");
+						//System.out.println("\nNOT AFTER\n");
 						dateTimeStatus = ValidationStatus.error("Date fin ne peut pas etre inférieure, il doit etre au moins 5mins dans le futur");
 
 						return ValidationStatus.error("Date fin ne peut pas etre inférieure, il doit etre au moins 5mins dans le futur");
@@ -329,10 +337,6 @@ public class AjouterProduitWindow extends Dialog{
 		};
 
 
-		//WritableValue value = WritableValue.withValueType(Date.class);
-
-
-
 		UpdateValueStrategy strategy = new UpdateValueStrategy();
 		strategy.setAfterGetValidator(dateValidator);
 
@@ -342,7 +346,11 @@ public class AjouterProduitWindow extends Dialog{
 		//Adding some decoration
 		ControlDecorationSupport.create(binding, SWT.RIGHT|SWT.TOP);
 
-
+		
+		IObservableValue descTarget = WidgetProperties.text(SWT.Modify).observe(descriptionText);
+		IObservableValue descModel = BeanProperties.value(Product.class, "descProduit").observe(product);
+		
+		Binding descBinding = ctx.bindValue(descTarget, descModel);
 
 		//IObservableValue timemodel = BeanProperties.value(Product.class, "date").
 		//		observe(product);
@@ -458,6 +466,7 @@ public class AjouterProduitWindow extends Dialog{
 
 		IObservableValue nomtarget = WidgetProperties.
 				text(SWT.Modify).observe(nomProduitText);
+		
 		IObservableValue nomModel = BeanProperties.value(Product.class, "nomProduit").
 				observe(product);
 
@@ -471,9 +480,17 @@ public class AjouterProduitWindow extends Dialog{
 
 		//Adding some decoration
 		ControlDecorationSupport.create(nomBinding, SWT.RIGHT|SWT.TOP);
+		
+		Button btnNotifications = new Button(composite, SWT.CHECK);
+		FormData fd_btnNotifications = new FormData();
+		fd_btnNotifications.top = new FormAttachment(dateFin, 0, SWT.TOP);
+		fd_btnNotifications.right = new FormAttachment(100, -23);
+		btnNotifications.setLayoutData(fd_btnNotifications);
+		btnNotifications.setText("Notifications");
+		
+		btnNotifications.addListener(SWT.Selection, listener->{
+			receiveNotifications =  btnNotifications.getSelection();
+		});
 		//shell.pack();
 	}
-	/**
-	 * @return the status
-	 */
 }

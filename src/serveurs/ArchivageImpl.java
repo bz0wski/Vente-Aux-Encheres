@@ -33,12 +33,6 @@ public class ArchivageImpl extends ArchivagePOA {
 
 
 	@Override
-	public void statistiques() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public void archiverVenteAchevee(Vente venteAcheve) {
 		ventesAcheve.add(venteAcheve);
 	}

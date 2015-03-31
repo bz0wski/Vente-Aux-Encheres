@@ -7,8 +7,8 @@
 	<classpathentry kind="lib" path="miglayout15-swing.jar" sourcepath="miglayout-src.zip"/>
 	<classpathentry kind="lib" path="swing2swt.jar"/>
 	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.core.databinding_1.4.1.v20140214-0004.jar" sourcepath="/ECLIPSE_HOME/plugins/org.eclipse.core.databinding.source_1.4.1.v20140214-0004.jar"/>
-	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.jface_3.10.0.v20140604-0740.jar"/>
-	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.jface.databinding_1.6.200.v20140528-1422.jar"/>
+	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.jface_3.10.0.v20140604-0740.jar" sourcepath="/ECLIPSE_HOME/plugins/org.eclipse.jface.source_3.10.0.v20140604-0740.jar"/>
+	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.jface.databinding_1.6.200.v20140528-1422.jar" sourcepath="/ECLIPSE_HOME/plugins/org.eclipse.jface.databinding.source_1.6.200.v20140528-1422.jar"/>
 	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.core.databinding.beans_1.2.200.v20140214-0004.jar" sourcepath="/ECLIPSE_HOME/plugins/org.eclipse.core.databinding.beans.source_1.2.200.v20140214-0004.jar"/>
 	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.core.databinding.observable_1.4.1.v20140210-1835.jar" sourcepath="/ECLIPSE_HOME/plugins/org.eclipse.core.databinding.observable.source_1.4.1.v20140210-1835.jar"/>
 	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.core.databinding.property_1.4.200.v20140214-0004.jar" sourcepath="/ECLIPSE_HOME/plugins/org.eclipse.core.databinding.property.source_1.4.200.v20140214-0004.jar"/>
@@ -18,5 +18,6 @@
 	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.equinox.common_3.6.200.v20130402-1505.jar"/>
 	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.equinox.concurrent_1.1.0.v20130327-1442.jar"/>
 	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.core.commands_3.6.100.v20140528-1422.jar"/>
+	<classpathentry kind="var" path="ECLIPSE_HOME/plugins/org.eclipse.ui.workbench_3.106.0.v20140530-0732.jar" sourcepath="/ECLIPSE_HOME/plugins/org.eclipse.ui.workbench.source_3.106.0.v20140530-0732.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

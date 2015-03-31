@@ -3,10 +3,15 @@ package serveurs;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.Timer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.databinding.observable.Realm;
 import org.eclipse.jface.databinding.swt.SWTObservables;
@@ -25,6 +30,8 @@ import org.omg.PortableServer.POAPackage.ServantNotActive;
 import org.omg.PortableServer.POAPackage.WrongPolicy;
 
 import ui.SystemeEnchereWindow;
+import utility.NotificationHandler;
+import utility.TerminerVente;
 import Enchere.Acheteur_Vendeur;
 import Enchere.Acheteur_VendeurHelper;
 import Enchere.Archivage;
@@ -37,18 +44,14 @@ import Enchere.Vente;
 public class SystemeEnchere_Serveur {
 
 	public static Archivage archivage;
-	private static boolean advance = false;
+	//private static boolean advance = false;
 	private static String IORServant = null;
+	public static AtomicInteger clients = new AtomicInteger();
 	CountDownLatch latch = new CountDownLatch(1);
 
-	private static final Object lock = new Object();
+	//private static final Object lock = new Object();
 	private static ExecutorService executor = Executors.newSingleThreadExecutor();
 	public static void main(String[] args) {
-		/********************************************************************************************************************/
-		/******************************** LANCEMENT DE LA PARTIE SERVEUR ********************************************************/			
-		/********************************************************************************************************************/	
-
-
 
 		/********************************************************************************************************************/			
 		/******************************** LANCER LA PARTIE CLIENT D'ABORD, CE CLIENT VA CONSULTER ******************************/			
@@ -57,28 +60,17 @@ public class SystemeEnchere_Serveur {
 
 		enchereClientToArchive(args);
 
-		/*	synchronized (lock) {
-			while(!advance){
-				try {
-					lock.wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}*/
-
 	}
 
 
 
-	public static void advance(boolean what) {
+/*	public static void advance(boolean what) {
 		synchronized (lock) {
 			advance = what;
 			lock.notifyAll();
 
 		}
-	}
+	}*/
 
 	private static void enchereServer(String [] args) {
 		// Intialisation de l'ORB
@@ -119,7 +111,7 @@ public class SystemeEnchere_Serveur {
 			System.out.println("Sous quel nom voulez-vous enregistrer l'objet Corba systeme Enchere ?");
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			String nomObj01 = in.readLine();
-
+			
 
 			objetSystemeEnchere[1] = new NameComponent(nomObj01,"Objet SystemeEnchere"); // id, kind
 
@@ -165,10 +157,10 @@ public class SystemeEnchere_Serveur {
 	}
 
 
-	public static void shutdown() {
+/*	public static void shutdown() {
 		 executor.shutdown();
 	}
-	
+	*/
 	private static void enchereClientToArchive(String [] args) {
 
 		try {
@@ -200,6 +192,9 @@ public class SystemeEnchere_Serveur {
 					+ "' trouvé auprès du service de noms. IOR de l'objet :");
 			System.out.println(orb.object_to_string(distantArchivage));
 			System.out.println("\nLancement du serveur Systeme Enchere");
+			/********************************************************************************************************************/
+			/******************************** LANCEMENT DE LA PARTIE SERVEUR ********************************************************/			
+			/********************************************************************************************************************/	
 			enchereServer(args);
 
 			if (IORServant != null) {
@@ -211,7 +206,7 @@ public class SystemeEnchere_Serveur {
 
 
 				archivage = Enchere.ArchivageHelper.narrow(distantArchivage);
-				archivage.mettreAuxEnchere();
+				
 
 
 				//Recuperer les données stockées dans la bd, initialiser le systeme
@@ -236,10 +231,27 @@ public class SystemeEnchere_Serveur {
 				for (int i = 0; i < utilisateurs.length; i++) {
 					System.out.println(utilisateurs[i].nom);
 				}
-
+				
+				//Continuer les Ventes qui ne sont pas encore terminé, enlève ceux qui ont
+				//expiré depuis le dernier lancement du système.
+				DateFormat format = DateFormat.getDateTimeInstance(DateFormat.FULL,DateFormat.SHORT,  Locale.FRANCE);
 				System.out.println("Les Ventes en cours");
 				for (int i = 0; i < ventes.length; i++) {
-					System.out.println(ventes[i].idVente);
+					
+					Date now = new Date();
+					Date dateFin = format.parse(ventes[i].dateAchevee);
+					if (dateFin instanceof Date) {
+						if (now.before(dateFin)) {
+							systemeEnchere.enleverVente(ventes[i].idVente);
+						} else {
+							String nomProduit = ventes[i].produitVendu.nom;
+
+							Timer timer = new Timer(nomProduit + "Timer", true);
+							timer.schedule(new TerminerVente(ventes[i],
+									systemeEnchere), dateFin);
+						}
+					}
+					
 				}
 
 				final Display display = Display.getDefault();

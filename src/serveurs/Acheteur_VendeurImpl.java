@@ -3,9 +3,8 @@
  */
 package serveurs;
 
-import utility.EnchereObserver;
+
 import Enchere.Acheteur_VendeurPOA;
-import Enchere.Produit;
 
 /**
  * @author Salim AHMED
@@ -13,22 +12,35 @@ import Enchere.Produit;
  */
 public class Acheteur_VendeurImpl extends Acheteur_VendeurPOA{
 
-
-	@Override
-	public Produit[] listeproduits() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void listeproduits(Produit[] newListeproduits) {
-		// TODO Auto-generated method stub
-
-	}
-
+	private String notification = new String();
+	private String previous = "";
+	
 	@Override
 	public void recevoirNotification(String message) {
-		System.out.println("NOTIFICATION:  "+ message);
+		System.out.println("IN SERVER NOTIFICATION:  "+ message);
+		
+		notification("NOTIFICATION: "+message+"\n");
+		
+	//	synchronized(MainClientWindow.lock) {
+	//		MainClientWindow.refresh = true;
+	//		MainClientWindow.lock.notify();
+	//	}
+		
+		
+	}
+
+	@Override
+	public String notification() {
+		if (!notification.equals(previous)) {
+			previous = notification;
+			return notification;
+		}
+		return "";
+	}
+
+	@Override
+	public void notification(String newNotification) {
+		this.notification = newNotification;		
 	}
 
 }
