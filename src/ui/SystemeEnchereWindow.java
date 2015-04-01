@@ -114,7 +114,6 @@ public class SystemeEnchereWindow {
 		Button btn1 = new Button(composite, SWT.NONE);
 		
 		btn1.setText("Afficher Statistiques");
-		btn1.setEnabled(false);
 		FormData fd_btn1 = new FormData();
 
 		fd_btn1.top = new FormAttachment(text, 5, SWT.BOTTOM);
@@ -123,7 +122,8 @@ public class SystemeEnchereWindow {
 		btn1.setLayoutData(fd_btn1);
 		
 		btn1.addListener(SWT.Selection, listener->{
-			systemeEnchere.statistiques();
+			builder.append(systemeEnchere.statistiques());
+			text.setText(builder.toString());
 		});
 
 		Button btnLancerServeur = new Button(composite, SWT.PUSH);
@@ -161,6 +161,8 @@ public class SystemeEnchereWindow {
 		
 		btn3.addListener(SWT.Selection, listener->{
 			saveSystemState();
+			builder.append("\nEtat système sauvegardé.");
+			text.setText(builder.toString());
 		});
 		
 	}

@@ -242,7 +242,7 @@ public class SystemeEnchere_Serveur {
 					Date dateFin = format.parse(ventes[i].dateAchevee);
 					if (dateFin instanceof Date) {
 						if (now.before(dateFin)) {
-							systemeEnchere.enleverVente(ventes[i].idVente);
+						//	systemeEnchere.enleverVente(ventes[i].idVente);
 						} else {
 							String nomProduit = ventes[i].produitVendu.nom;
 

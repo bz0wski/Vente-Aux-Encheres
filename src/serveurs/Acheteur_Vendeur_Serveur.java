@@ -30,6 +30,7 @@ import org.omg.PortableServer.POAPackage.WrongPolicy;
 
 import Enchere.Acheteur_Vendeur;
 import Enchere.Acheteur_VendeurHelper;
+import Enchere.ClientUpdate;
 import Enchere.Produit;
 import Enchere.SystemeEnchere;
 import Enchere.Utilisateur;
@@ -231,7 +232,8 @@ public class Acheteur_Vendeur_Serveur {
 							Acheteur_Vendeur acheteur_Vendeur = Acheteur_VendeurHelper.narrow(acheteurbObject);
 						
 							MainClientWindow window = new MainClientWindow(systemeEnchere, acheteur_Vendeur);
-							
+							ClientUpdate client = new ClientUpdate(acheteur_Vendeur, false);
+							systemeEnchere.addClient(client);
 							//Add this instance of MainClientWindow to the list of all clients opened atm.
 							//NotificationHandler.addElement(window);
 						

@@ -24,6 +24,8 @@ module Enchere {
 	
     };
 	
+	
+	
 	struct Vente{
 	string idVente;
 	Produit produitVendu;
@@ -44,6 +46,14 @@ module Enchere {
 		oneway void recevoirNotification (in string message);
     };
 	
+	struct ClientUpdate{
+	Acheteur_Vendeur ac;
+	boolean updateUI;
+	};
+	
+	typedef sequence<ClientUpdate> ListeClientUpdate;
+	
+	
     interface SystemeEnchere{
     	attribute ListeProduits tousLesProduits;
     	attribute ListeUtilisateurs tousLesUtilisateurs;
@@ -63,6 +73,11 @@ module Enchere {
 		Produit publierProduit(in Utilisateur vendeur, in string nomProduit, in string categorieProduit, in string descProduit, in double prixProduit,in string dateProduit, in SystemeEnchere ior);
 		/* instanciation d'un objet GestionEnchere à la publication d'un nouveau produit*/
     	
+	   void doneUpdatingClient(in Acheteur_Vendeur ior);
+		
+		ListeClientUpdate getUIUpdateStatus();
+		
+		boolean addClient(in ClientUpdate client);
 		
 		string proposerPrix(in double prix, in Utilisateur user, in Produit produit);
 		/*Cette methode permettra d'enlever une vente terminée de la liste des ventes en cours */

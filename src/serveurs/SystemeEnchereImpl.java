@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 import utility.EnchereSubject;
 import utility.TerminerVente;
 import Enchere.Acheteur_Vendeur;
+import Enchere.ClientUpdate;
 import Enchere.Produit;
 import Enchere.ProduitExistePas;
 import Enchere.SystemeEnchere;
@@ -32,6 +34,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 	private List<Vente> lesVentesEnCours = new ArrayList<>();
 	private Map<String, List<Acheteur_Vendeur>> prod_UserNotifications = new HashMap<>();
 	private Map<String, Map<String, List<Double>>> histo_prod_User_Prix = new HashMap<>();
+	private List<ClientUpdate>whenToUpdate = new ArrayList<>();
 
 	//Map<Utilisateur, String> user_IOR_ASSOC = new HashMap<>();
 	/**
@@ -212,10 +215,27 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		} catch (Exception e) {
 			e.getMessage();
 		}
+		updateClients();
 		return "Prix modifié";
 	}
 
-
+	public void updateClients() {
+		for (ClientUpdate cl : whenToUpdate) {
+			cl.updateUI = true;
+		}
+	}
+	
+	public void doneUpdatingClient(Acheteur_Vendeur ior) {
+		for (ClientUpdate cl : whenToUpdate) {
+			if (cl.ac.equals(ior)) {
+				cl.updateUI = false;
+			}
+		}
+	}
+	
+	public ClientUpdate[] getUIUpdateStatus() {
+		return this.whenToUpdate.toArray(new ClientUpdate[0]);
+	}
 	/*
 	 * This method is called when a user wishes to create a new account and be associated with the system.
 	 * (non-Javadoc)
@@ -334,6 +354,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+		updateClients();
 		return newProduit;
 	}
 
@@ -378,36 +399,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		Utilisateur user = lesUtilisateurs.stream().filter(u->u.id.equals(id)).findFirst().get();
 		return user;
 	}
-	/*public Vente getVente(String uuid) {
-		return lesVentesEnCours.parallelStream().filter(v->v.idVente.equals(uuid)).findFirst().get();
-	}*/
 
-
-
-	//	public boolean enleverVente(Vente v) {
-	//		if (lesVentesEnCours == null) {
-	//			System.out.println("List vente is null");
-	//			return false;
-	//			}
-	//		else {
-	//			System.out.println("List vente is NOT null");
-	//		}
-	//System.out.println("Liste Ventes: "+lesVentesEnCours);
-	//if (lesVentesEnCours.isEmpty()) 
-	//	return false;
-	/*
-		for (Vente vente : lesVentesEnCours) {
-			if (vente != null) {
-				if (vente.idVente.equals(v.idVente)) {
-					this.lesVentesEnCours.remove(v);
-					return true;
-				}
-			}else {
-				System.out.println("A vente is null");
-			}
-		}*/
-	//	return true;
-	//}
 
 	/**
 	 * L'utilisateur peut demander d'etre notifie lorsque le prix d'une enchere dans lequel il participe evolue
@@ -465,6 +457,8 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		}
 
 	}
+	
+	
 	@Override
 	public void supprimerVente(Vente vente) {
 
@@ -485,7 +479,6 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		for (Vente vente : lesVentesEnCours) {
 			if (vente != null) {
 				if (vente.idVente.equals(venteID)) {
-
 					//remove the product associated with this sale
 					for (Produit produit : lesProduits) {
 						if (produit != null) {
@@ -511,6 +504,7 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		}
 
 	}
+	
 	private Produit findProduit(String id){
 		Optional<Produit> optional = Optional.empty();
 		optional = lesProduits.stream().filter(p->p.id.equals(id)).findFirst();
@@ -540,13 +534,15 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		double totalDePropositions = 0;
 		
 		String userwithMaxProp = "";
-		String produitwithMaxProp = "";
+		String produitwithMinprix = "";
 		int maxProd = 0;
 		int maxUser = 0;
 		
 		double maxProp = 0;
+		double minPrix = 500000000;
+		double minProdPrix = 0;
 
-		builder.append("Le produit avec les plus de propositions.");
+		builder.append("Le produit avec les plus de propositions.\n");
 		for (java.util.Map.Entry<String, Map<String, List<Double>>>   x : histo_prod_User_Prix.entrySet()) {
 			//pour chaque produit...
 			for (java.util.Map.Entry<String, List<Double>>  g : x.getValue().entrySet()) {
@@ -564,9 +560,10 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 					for (Double db : g.getValue()) {
 						if (db>maxProp) {
 							maxProp = db;
-							produitwithMaxProp = x.getKey();
+							
 							userwithMaxProp = g.getKey();
 						}
+						
 						totalDePropositions+=db;
 					}
 
@@ -579,53 +576,75 @@ public class SystemeEnchereImpl extends SystemeEncherePOA implements EnchereSubj
 		}
 		Produit produit = findProduit(prodId);
 		if (produit != null) {
-			builder.append("Nom du produit: "+produit.nom +" \tNombre de propositions: "+maxProd);
+			builder.append("Nom du produit: "+produit.nom +" \tNombre de propositions: "+maxProd+"\n");
 		}else {
-			builder.append("Aucun résultat.");
+			builder.append("Aucun résultat.\n");
 		}
 		maxProd = 0;	
 
-		builder.append("Utilisateur avec les plus de propositions.");
+		builder.append("Utilisateur avec les plus de propositions.\n");
 		Utilisateur user = findUser(UserId);
 		if (user != null) {
-			builder.append("Nom de l'utilisateur: "+user.nom +" \tNombre de propositions: "+maxUser);
+			builder.append("Nom de l'utilisateur: "+user.nom +" \tNombre de propositions: "+maxUser+"\n");
 		} else {
-			builder.append("Aucun résultat.");
+			builder.append("Aucun résultat.\n");
 		}
 		maxUser = 0;
 
-		builder.append("Utilisateur avec la plus grande proposition.");
+		builder.append("Utilisateur avec la plus grande proposition.\n");
 		Utilisateur user2 = findUser(userwithMaxProp);
 		if (user2 != null) {
-			builder.append("Nom de l'utilisateur: "+user2.nom +" \tMontant de proposition: "+maxProp);
+			builder.append("Nom de l'utilisateur: "+user2.nom +" \tMontant de proposition: "+maxProp+"\n");
 		} else {
-			builder.append("Aucun résultat.");
+			builder.append("Aucun résultat.\n");
 		}
 		
 		
-		builder.append("Le produit le plus cher");
+		builder.append("Le produit le plus cher\n");
 		maxProp = 0; prodId = "";
 		for (Produit p : lesProduits) {
 			if (p.prix_depart>maxProd) {
 				prodId = p.id;
 				maxProp = p.prix_depart;
 			}
+			if (p.prix_depart<minPrix) {
+				minPrix = p.prix_depart;
+				produitwithMinprix = p.id;
+			}
 		}
 		produit = null;
 		produit = findProduit(prodId);
 		if (produit != null) {
-			builder.append("Nom du produit: "+produit.nom +" \tPrix: "+maxProp);
+			builder.append("Nom du produit: "+produit.nom +" \tPrix: "+maxProp+"\n");
 		}else {
-			builder.append("Aucun résultat.");
+			builder.append("Aucun résultat.\n");
 		}
 
 		
-		builder.append("Le produit le moins cher");
+		builder.append("Le produit le moins cher\n");
 		
-		builder.append("Montant Total de tous les propositions.");
-		builder.append(totalDePropositions);
+		produit = null;
+		produit = findProduit(produitwithMinprix);
+		
+		if (produit != null && minPrix != 500000000) {
+			builder.append("Nom du produit: "+produit.nom +" \tPrix: "+minPrix+"\n");
+		}else {
+			builder.append("Aucun résultat.\n");
+		}
+		
+		builder.append("Montant Total de tous les propositions.\n");
+		builder.append(totalDePropositions+"\n");
 
 		return builder.toString();
+	}
+	
+	@Override
+	public boolean addClient(ClientUpdate client) {
+		if (whenToUpdate.contains(client)) {
+			return false;
+		}
+		System.out.println("Adding client");
+		return whenToUpdate.add(client);
 	}
 
 }

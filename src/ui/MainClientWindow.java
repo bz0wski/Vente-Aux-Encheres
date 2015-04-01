@@ -55,9 +55,11 @@ import utility.MyAbstractModelObject;
 import utility.NotificationHandler;
 import utility.NotificationSubject;
 import Enchere.Acheteur_Vendeur;
+import Enchere.ClientUpdate;
 import Enchere.Produit;
 import Enchere.SystemeEnchere;
 import Enchere.Utilisateur;
+
 import org.eclipse.swt.widgets.Label;
 
 public class MainClientWindow extends MyAbstractModelObject{
@@ -100,6 +102,8 @@ public class MainClientWindow extends MyAbstractModelObject{
 
 	private Object lock = new Object();
 	private boolean updateUI = false;
+	
+	private List<ClientUpdate> updateList;
 	/**
 	 * Launch the application.
 	 * @param args
@@ -824,15 +828,31 @@ public class MainClientWindow extends MyAbstractModelObject{
 	}
 
 	private void updateEvery5SecondsOrSo(){
-
+		
+		
 		TimerTask task = new TimerTask() {
 
 			@Override
 			public void run() {
-				update();
+				if (acheteur_Vendeur == null)
+					return;
+				
+				updateList = new ArrayList<>(Arrays.asList(systemeEnchere.getUIUpdateStatus()));
+				if (!updateList.isEmpty()) {
+					for (ClientUpdate cl : updateList) {
+						if (cl.ac.equals(acheteur_Vendeur)) {
+							if (cl.updateUI) {
+								update();
+								systemeEnchere.doneUpdatingClient(acheteur_Vendeur);
+							}
+							
+						}
+					}
+				}
+				
 			}
 		};
-		timer.scheduleAtFixedRate(task, new Date(), 5000);
+		timer.scheduleAtFixedRate(task, new Date(), 1000);
 
 	}
 }
